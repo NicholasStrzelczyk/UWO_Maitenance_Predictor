@@ -108,6 +108,11 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 			train_bf1 += f1_score(outputs, targets)
 		del images, targets, outputs
 
+		losses_train.append(train_loss / len(train_loader))
+		precision_train.append(train_bp / len(train_loader))
+		recall_train.append(train_br / len(train_loader))
+		f1_train.append(train_bf1 / len(train_loader))
+
 		# --- validation step --- #
 		with torch.no_grad():
 			for images, targets in tqdm(val_loader, desc="epoch {} val progress".format(epoch + 1)):
@@ -122,21 +127,16 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 		del images, targets, outputs
 		scheduler.step(val_loss)
 
-		# --- append metric lists --- #
-		losses_train.append(train_loss / len(train_loader))
 		losses_val.append(val_loss / len(val_loader))
-		precision_train.append(train_bp / len(train_loader))
 		precision_val.append(val_bp / len(val_loader))
-		recall_train.append(train_br / len(train_loader))
 		recall_val.append(val_br / len(val_loader))
-		f1_train.append(train_bf1 / len(train_loader))
 		f1_val.append(val_bf1 / len(val_loader))
 
 		# --- print epoch results --- #
 		print("{} epoch {}/{} metrics:".format(datetime.now(), epoch + 1, n_epochs))
-		print("[training] loss: {:.7f}, precision: {:.7f}, recall: {:.7f}, f1_score: {:.7f}".format(
+		print("\t[train] loss: {:.7f}, precision: {:.7f}, recall: {:.7f}, f1_score: {:.7f}".format(
 			losses_train[epoch], precision_train[epoch], recall_train[epoch], f1_train[epoch]))
-		print("[validation] loss: {:.7f}, precision: {:.7f}, recall: {:.7f}, f1_score: {:.7f}".format(
+		print("\t[valid] loss: {:.7f}, precision: {:.7f}, recall: {:.7f}, f1_score: {:.7f}".format(
 			losses_val[epoch], precision_val[epoch], recall_val[epoch], f1_val[epoch]))
 
 	# --- save weights and plot metrics --- #
@@ -153,13 +153,16 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 # TODO:
 #   - (DONE?) program more metrics to keep track of
 #   - (DONE?) figure out how to add weights to BCE loss
+#       --> figure out how to improve this loss function (it might not be correct)
 #   - implement logging
 #   - finsh the test.py file
+#   - try using RGB images
+#   - try classifying 3 classes
 if __name__ == '__main__':
 	# hyperparameters
 	model_version = 1
 	n_epochs = 10  # num of epochs
-	batch_sz = 16  # batch size
+	batch_sz = 8  # batch size
 	lr = 0.0001  # learning rate
 	wd = 0.00001  # weight decay
 	resize_shape = (512, 512)
@@ -169,7 +172,7 @@ if __name__ == '__main__':
 	save_path = create_model_directory()
 
 	# set up dataset(s)
-	x_train, y_train, x_val, y_val = get_split_data(list_path, split=0.2)
+	x_train, y_train, x_val, y_val = get_split_data(list_path, split=0.98)
 	train_ds = BellGrayDS(x_train, y_train, resize_shape=resize_shape)
 	val_ds = BellGrayDS(x_val, y_val, resize_shape=resize_shape)
 	train_loader = DataLoader(train_ds, batch_size=batch_sz, shuffle=True)
