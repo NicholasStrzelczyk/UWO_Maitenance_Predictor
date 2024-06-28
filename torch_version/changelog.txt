@@ -1,0 +1,6 @@
+----- USE THIS TO DOCUMENT CHANGES MADE -----
+
+[June 27th, 2024]   - created this file
+                    - finished initial conversion of model to pytorch
+                    - training file runs correctly
+                    - test file not complete yet
