@@ -15,31 +15,26 @@ from custom_ds import get_split_data, BellGrayDS
 from custom_model import UNet
 
 
-def get_preprocessed_tgt(path):
-	global resize_shape
-	tgt = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-	tgt = cv2.resize(tgt, resize_shape)
-	tgt = cv2.normalize(tgt, dst=None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-	tgt[tgt >= 0.5] = 1
-	tgt[tgt < 0.5] = 0
-	return tgt
-
-
 def estimate_class_weight(y_train):
+	global resize_shape
 	ratio_list = []
 	for path in tqdm(np.unique(y_train), desc='estimating class weights'):
-		_, count = np.unique(get_preprocessed_tgt(path), return_counts=True)
+		tgt = cv2.resize(cv2.imread(path, cv2.IMREAD_GRAYSCALE), resize_shape)
+		tgt = cv2.normalize(tgt, dst=None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+		tgt[tgt >= 0.5] = 1
+		tgt[tgt < 0.5] = 0
+		_, count = np.unique(tgt, return_counts=True)
 		ratio_list.append(float(count[1] / count[0]))
 	factor = np.round(np.mean(ratio_list), decimals=4)
 	return 1.0 - factor
 
 
-def print_metric_plots(metric_dict):
+def print_metric_plots(metrics_history):
 	global model_version, save_path
-	for name, metric in metric_dict:
+	for name, m_train, m_val in metrics_history:
 		plt.clf()
-		plt.plot(metric[0])
-		plt.plot(metric[1])
+		plt.plot(m_train)
+		plt.plot(m_val)
 		plt.title("Training {}".format(name))
 		plt.ylabel(name)
 		plt.xlabel("epoch")
@@ -49,7 +44,8 @@ def print_metric_plots(metric_dict):
 
 def create_model_directory():
 	global model_version
-	new_path = "./model_v{}".format(model_version)
+	# new_path = "./model_v{}".format(model_version)  # mac
+	new_path = ".\\model_v{}".format(model_version)  # windows
 	if not os.path.exists(new_path):
 		os.makedirs(new_path, exist_ok=True)
 	return new_path
@@ -74,9 +70,9 @@ class FocalBCELoss(nn.Module):
 def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epochs, device):
 	global model_version, save_path
 
-	precision = BinaryPrecision(threshold=0.5)
-	recall = BinaryRecall(threshold=0.5)
-	f1_score = BinaryF1Score(threshold=0.5)
+	precision = BinaryPrecision(threshold=0.5).to(device=device)
+	recall = BinaryRecall(threshold=0.5).to(device=device)
+	f1_score = BinaryF1Score(threshold=0.5).to(device=device)
 
 	losses_train, losses_val = [], []
 	precision_train, precision_val = [], []
@@ -103,10 +99,10 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 			loss.backward()
 			optimizer.step()
 			train_loss += loss.item()
-			train_bp += precision(outputs, targets)
-			train_br += recall(outputs, targets)
-			train_bf1 += f1_score(outputs, targets)
-		del images, targets, outputs
+			train_bp += precision(outputs, targets).item()
+			train_br += recall(outputs, targets).item()
+			train_bf1 += f1_score(outputs, targets).item()
+			del images, targets, outputs
 
 		losses_train.append(train_loss / len(train_loader))
 		precision_train.append(train_bp / len(train_loader))
@@ -121,10 +117,11 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 				outputs = model(images)
 				loss = loss_fn(outputs, targets)
 				val_loss += loss.item()
-				val_bp += precision(outputs, targets)
-				val_br += recall(outputs, targets)
-				val_bf1 += f1_score(outputs, targets)
-		del images, targets, outputs
+				val_bp += precision(outputs, targets).item()
+				val_br += recall(outputs, targets).item()
+				val_bf1 += f1_score(outputs, targets).item()
+				del images, targets, outputs
+
 		scheduler.step(val_loss)
 
 		losses_val.append(val_loss / len(val_loader))
@@ -134,20 +131,20 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 
 		# --- print epoch results --- #
 		print("{} epoch {}/{} metrics:".format(datetime.now(), epoch + 1, n_epochs))
-		print("\t[train] loss: {:.7f}, precision: {:.7f}, recall: {:.7f}, f1_score: {:.7f}".format(
+		print("\t[train] loss: {:.9f}, precision: {:.9f}, recall: {:.9f}, f1_score: {:.9f}".format(
 			losses_train[epoch], precision_train[epoch], recall_train[epoch], f1_train[epoch]))
-		print("\t[valid] loss: {:.7f}, precision: {:.7f}, recall: {:.7f}, f1_score: {:.7f}".format(
+		print("\t[valid] loss: {:.9f}, precision: {:.9f}, recall: {:.9f}, f1_score: {:.9f}".format(
 			losses_val[epoch], precision_val[epoch], recall_val[epoch], f1_val[epoch]))
 
 	# --- save weights and plot metrics --- #
 	torch.save(model.state_dict(), os.path.join(save_path, "model_{}_weights.pth".format(model_version)))
-	metrics_dict = {
-		"loss": (losses_train, losses_val),
-		"precision": (precision_train, precision_val),
-		"recall": (recall_train, recall_val),
-		"f1_score": (f1_train, f1_val),
-	}
-	print_metric_plots(metrics_dict)
+	metrics_history = [
+		("loss", losses_train, losses_val),
+		("precision", precision_train, precision_val),
+		("recall", recall_train, recall_val),
+		("f1_score", f1_train, f1_val),
+	]
+	print_metric_plots(metrics_history)
 
 
 # TODO:
@@ -160,19 +157,21 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 #   - try classifying 3 classes
 if __name__ == '__main__':
 	# hyperparameters
-	model_version = 1
+	model_version = 2
 	n_epochs = 10  # num of epochs
-	batch_sz = 8  # batch size
+	batch_sz = 2  # batch size (2 works best on gpu)
 	lr = 0.0001  # learning rate
 	wd = 0.00001  # weight decay
 	resize_shape = (512, 512)
-	data_dir = "/Users/nick_1/Bell_5G_Data/1080_snapshots"
-	list_path = "/Users/nick_1/Bell_5G_Data/1080_snapshots/train/list.txt"
+	# data_dir = "/Users/nick_1/Bell_5G_Data/1080_snapshots"  # mac
+	# list_path = os.path.join(data_dir, "train/list.txt")  # mac
+	data_dir = "C:\\Users\\NickS\\UWO_Summer_Research\\Bell_5G_Data\\1080_snapshots"  # windows
+	list_path = os.path.join(data_dir, "train\\list_windows.txt")  # windows
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 	save_path = create_model_directory()
 
 	# set up dataset(s)
-	x_train, y_train, x_val, y_val = get_split_data(list_path, split=0.98)
+	x_train, y_train, x_val, y_val = get_split_data(list_path, split=0.2)
 	train_ds = BellGrayDS(x_train, y_train, resize_shape=resize_shape)
 	val_ds = BellGrayDS(x_val, y_val, resize_shape=resize_shape)
 	train_loader = DataLoader(train_ds, batch_size=batch_sz, shuffle=True)

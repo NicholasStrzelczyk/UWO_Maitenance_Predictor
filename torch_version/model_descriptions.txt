@@ -1,10 +1,11 @@
 ----- USE THIS TO KEEP TRACK OF DIFFERENCES FOR EACH MODEL -----
 
 Model 1:
-
+    - initial model trained on 10 epochs
+    - code error made plots fail
 
 Model 2:
-
+    -
 
 Model 3:
 

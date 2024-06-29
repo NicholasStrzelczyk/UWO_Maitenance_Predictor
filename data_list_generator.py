@@ -4,8 +4,9 @@ from tqdm import tqdm
 
 if __name__ == '__main__':
 	# hyperparameters
-	data_dir = "/Users/nick_1/Bell_5G_Data/1080_snapshots/train"
-	list_name = "list.txt"
+	# data_dir = "/Users/nick_1/Bell_5G_Data/1080_snapshots/train"  # mac
+	data_dir = "C:\\Users\\NickS\\UWO_Summer_Research\\Bell_5G_Data\\1080_snapshots\\train"  # windows
+	list_name = "list_windows.txt"
 	start_date = 13
 	end_date = 28
 
