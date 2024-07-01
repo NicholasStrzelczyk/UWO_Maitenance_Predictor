@@ -1,12 +1,15 @@
 ----- USE THIS TO KEEP TRACK OF DIFFERENCES FOR EACH MODEL -----
 
 Model 1:
-    - initial model trained on 10 epochs
-    - code error made plots fail
+    - deleted
 
 Model 2:
-    -
+    - retry of initial model (also 10 epochs)
+    - no clear sign of overfitting
 
 Model 3:
+    - 25 epochs
+    - trying to see at what point overfitting occurs
+    - will use this model for initial testing
 
 
