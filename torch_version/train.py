@@ -4,13 +4,13 @@ from datetime import datetime
 import torch
 from torch import optim
 from torch.utils.data import DataLoader
-from torchmetrics.classification import BinaryF1Score, BinaryPrecision, BinaryRecall
+from torchmetrics.classification import BinaryF1Score, BinaryPrecision, BinaryRecall, Dice
 from torchsummary import summary
 from tqdm import tqdm
 
 from custom_ds import BellGrayDS
 from custom_loss import FocalBCELoss
-from custom_model import UNet
+from custom_model import UNetGrayscale
 from utils.data_helper import get_os_dependent_paths, get_data_from_list, print_metric_plots
 
 
@@ -26,17 +26,13 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
     recall_train, recall_val = [], []
     f1_train, f1_val = [], []
 
-    model.train()
-    print("{} starting training for model {}...".format(datetime.now(), model_version))
-
     # --- iterate through all epochs --- #
+    print("{} starting training for model {}...".format(datetime.now(), model_version))
     for epoch in range(n_epochs):
-        train_loss, val_loss = 0.0, 0.0
-        train_bp, val_bp = 0.0, 0.0
-        train_br, val_br = 0.0, 0.0
-        train_bf1, val_bf1 = 0.0, 0.0
 
         # --- training step --- #
+        model.train()
+        epoch_loss, epoch_bp, epoch_br, epoch_bf1 = 0.0, 0.0, 0.0, 0.0
         for images, targets in tqdm(train_loader, desc="epoch {} train progress".format(epoch + 1)):
             images = images.to(device=device)
             targets = targets.to(device=device)
@@ -45,36 +41,38 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            train_loss += loss.item()
-            train_bp += precision(outputs, targets).item()
-            train_br += recall(outputs, targets).item()
-            train_bf1 += f1_score(outputs, targets).item()
+            epoch_loss += loss.item()
+            epoch_bp += precision(outputs, targets).item()
+            epoch_br += recall(outputs, targets).item()
+            epoch_bf1 += f1_score(outputs, targets).item()
             del images, targets, outputs
 
-        losses_train.append(train_loss / len(train_loader))
-        precision_train.append(train_bp / len(train_loader))
-        recall_train.append(train_br / len(train_loader))
-        f1_train.append(train_bf1 / len(train_loader))
+        losses_train.append(epoch_loss / len(train_loader))
+        precision_train.append(epoch_bp / len(train_loader))
+        recall_train.append(epoch_br / len(train_loader))
+        f1_train.append(epoch_bf1 / len(train_loader))
 
         # --- validation step --- #
+        model.eval()
+        epoch_loss, epoch_bp, epoch_br, epoch_bf1 = 0.0, 0.0, 0.0, 0.0
         with torch.no_grad():
             for images, targets in tqdm(val_loader, desc="epoch {} val progress".format(epoch + 1)):
                 images = images.to(device=device)
                 targets = targets.to(device=device)
                 outputs = model(images)
                 loss = loss_fn(outputs, targets)
-                val_loss += loss.item()
-                val_bp += precision(outputs, targets).item()
-                val_br += recall(outputs, targets).item()
-                val_bf1 += f1_score(outputs, targets).item()
+                epoch_loss += loss.item()
+                epoch_bp += precision(outputs, targets).item()
+                epoch_br += recall(outputs, targets).item()
+                epoch_bf1 += f1_score(outputs, targets).item()
                 del images, targets, outputs
 
-        scheduler.step(val_loss)
+        scheduler.step(epoch_loss)  # using validation loss
 
-        losses_val.append(val_loss / len(val_loader))
-        precision_val.append(val_bp / len(val_loader))
-        recall_val.append(val_br / len(val_loader))
-        f1_val.append(val_bf1 / len(val_loader))
+        losses_val.append(epoch_loss / len(val_loader))
+        precision_val.append(epoch_bp / len(val_loader))
+        recall_val.append(epoch_br / len(val_loader))
+        f1_val.append(epoch_bf1 / len(val_loader))
 
         # --- print epoch results --- #
         print("{} epoch {}/{} metrics:".format(datetime.now(), epoch + 1, n_epochs))
@@ -113,7 +111,7 @@ if __name__ == '__main__':
     val_loader = DataLoader(val_ds, batch_size=batch_sz, shuffle=False)
 
     # compile model
-    model = UNet(n_channels=1, n_classes=1)
+    model = UNetGrayscale()
     model.to(device=device)
 
     # init model training parameters

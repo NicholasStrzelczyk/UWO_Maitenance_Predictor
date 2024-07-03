@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from custom_ds import BellGrayDS
 from custom_loss import FocalBCELoss
-from custom_model import UNet
+from custom_model import UNetGrayscale, UNetBlackWhite
 from utils.data_helper import get_data_from_list, get_os_dependent_paths
 
 
@@ -22,26 +22,34 @@ def test(model, loss_fn, test_loader, device):
     f1_score = BinaryF1Score(threshold=0.5).to(device=device)
 
     test_loss, test_bp, test_br, test_bf1 = 0.0, 0.0, 0.0, 0.0
-    predictions = []
+    best_f1 = 0.0
+    worst_f1 = 1.0
 
     model.eval()
     print("{} starting testing for model {}...".format(datetime.now(), model_version))
 
     # --- validation step --- #
     with torch.no_grad():
-        for images, targets in tqdm(test_loader, desc="test progress"):
-            images = images.to(device=device)
-            targets = targets.to(device=device)
-            outputs = model(images)
-            loss = loss_fn(outputs, targets)
+        for image, target in tqdm(test_loader, desc="test progress"):
+            image = image.to(device=device)
+            target = target.to(device=device)
+            output = model(image)
+            loss = loss_fn(output, target)
             test_loss += loss.item()
-            test_bp += precision(outputs, targets).item()
-            test_br += recall(outputs, targets).item()
-            test_bf1 += f1_score(outputs, targets).item()
-            for pred in outputs:
-                pred = np.squeeze(pred.detach().cpu().numpy())
-                predictions.append(pred)
-            del images, targets, outputs
+            test_bp += precision(output, target).item()
+            test_br += recall(output, target).item()
+            test_bf1 += f1_score(output, target).item()
+
+            current_f1 = f1_score(output, target).item()
+            if current_f1 > best_f1:
+                best_prediction = np.copy(np.squeeze(output.detach().cpu().numpy()))
+                best_f1 = current_f1
+
+            if current_f1 < worst_f1:
+                worst_prediction = np.copy(np.squeeze(output.detach().cpu().numpy()))
+                worst_f1 = current_f1
+
+            del image, target, output
 
     # --- print epoch results --- #
     print("{} testing metrics:".format(datetime.now()))
@@ -50,31 +58,31 @@ def test(model, loss_fn, test_loader, device):
         test_br / len(test_loader), test_bf1 / len(test_loader)))
 
     # --- save example outputs --- #
-    f, axs = plt.subplots(nrows=2, ncols=2, figsize=(12, 12))
-    axs[0, 0].imshow(predictions[0], cmap='gray')
-    axs[0, 1].imshow(predictions[1], cmap='gray')
-    axs[1, 0].imshow(predictions[2], cmap='gray')
-    axs[1, 1].imshow(predictions[3], cmap='gray')
-    plt.suptitle('Predictions', fontsize=16, fontweight='bold')
+    f, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 10))
+    axs[0].imshow(best_prediction, cmap='gray')
+    axs[0].set_title('Best Prediction (f1_score={:.4f})'.format(best_f1))
+    axs[1].imshow(worst_prediction, cmap='gray')
+    axs[1].set_title('Worst Prediction (f1_score={:.4f})'.format(worst_f1))
+    plt.suptitle('Model_{} Predictions'.format(model_version), fontsize=16, fontweight='bold')
     plt.savefig(os.path.join(save_path, 'model_{}_predictions.png'.format(model_version)))
 
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 1
-    batch_sz = 2  # batch size (2 works best on gpu)
+    model_version = 3
     resize_shape = (512, 512)
     list_path, save_path = get_os_dependent_paths(model_version, partition='test')
+    weights_file = os.path.join(save_path, "model_{}_weights.pth".format(model_version))
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # set up dataset(s)
     x_test, y_test, _, _ = get_data_from_list(list_path, split=None)
     test_ds = BellGrayDS(x_test, y_test, resize_shape=resize_shape)
-    test_loader = DataLoader(test_ds, batch_size=batch_sz, shuffle=False)
+    test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
 
     # compile model
-    model = UNet(n_channels=1, n_classes=1)
-    torch.load(os.path.join(save_path, "model_{}_weights.pth".format(model_version)))
+    model = UNetGrayscale()
+    model.load_state_dict(torch.load(weights_file, map_location=device))
     model.to(device=device)
 
     # init model training parameters

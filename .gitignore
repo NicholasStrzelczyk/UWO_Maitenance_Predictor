@@ -1,7 +1,9 @@
 .idea/
+.DS_Store
 example/
 keras_version/
 old_code/
+torch_version/.DS_Store
 torch_version/__pycache__/
 torch_version/utils/__pycache__/
 torch_version/model_1/
