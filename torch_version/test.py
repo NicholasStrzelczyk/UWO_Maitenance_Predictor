@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 
+import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
@@ -10,7 +11,7 @@ from tqdm import tqdm
 from custom_ds import BellGrayDS
 from custom_loss import FocalBCELoss
 from custom_model import UNet
-from utils.data_helper import get_data_from_list, get_os_dependent_paths, estimate_class_weight
+from utils.data_helper import get_data_from_list, get_os_dependent_paths
 
 
 def test(model, loss_fn, test_loader, device):
@@ -38,7 +39,8 @@ def test(model, loss_fn, test_loader, device):
             test_br += recall(outputs, targets).item()
             test_bf1 += f1_score(outputs, targets).item()
             for pred in outputs:
-                predictions.append(pred.item())
+                pred = np.squeeze(pred.detach().cpu().numpy())
+                predictions.append(pred)
             del images, targets, outputs
 
     # --- print epoch results --- #
@@ -59,7 +61,7 @@ def test(model, loss_fn, test_loader, device):
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 3
+    model_version = 1
     batch_sz = 2  # batch size (2 works best on gpu)
     resize_shape = (512, 512)
     list_path, save_path = get_os_dependent_paths(model_version, partition='test')
@@ -76,8 +78,9 @@ if __name__ == '__main__':
     model.to(device=device)
 
     # init model training parameters
-    class_weight_alpha = estimate_class_weight(y_test)
-    print("Class weight alpha: {}".format(class_weight_alpha))
+    # class_weight_alpha = estimate_class_weight(y_test, resize_shape=resize_shape)
+    # print("Class weight alpha: {}".format(class_weight_alpha))
+    class_weight_alpha = 0.75
     loss_fn = FocalBCELoss(alpha=class_weight_alpha, gamma=2.0)
 
     # test model

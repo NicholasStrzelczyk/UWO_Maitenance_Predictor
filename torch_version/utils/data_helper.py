@@ -35,8 +35,7 @@ def get_data_from_list(list_path, split=None):
     return x1, y1, x2, y2
 
 
-def estimate_class_weight(y_set):
-    global resize_shape
+def estimate_class_weight(y_set, resize_shape):
     ratio_list = []
     for path in tqdm(np.unique(y_set), desc='estimating class weights'):
         tgt = cv2.resize(cv2.imread(path, cv2.IMREAD_GRAYSCALE), resize_shape)
@@ -62,8 +61,7 @@ def get_os_dependent_paths(model_ver, partition):
     return list_path, save_path
 
 
-def print_metric_plots(metrics_history):
-    global model_version, save_path
+def print_metric_plots(metrics_history, model_ver, save_path):
     for name, m_train, m_val in metrics_history:
         plt.clf()
         plt.plot(m_train)
@@ -72,4 +70,4 @@ def print_metric_plots(metrics_history):
         plt.ylabel(name)
         plt.xlabel("epoch")
         plt.legend(['train', 'val'])
-        plt.savefig(os.path.join(save_path, 'model_{}_train_{}_plot.png'.format(model_version, name)))
+        plt.savefig(os.path.join(save_path, 'model_{}_train_{}_plot.png'.format(model_ver, name)))

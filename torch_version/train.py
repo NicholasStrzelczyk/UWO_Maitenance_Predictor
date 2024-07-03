@@ -11,7 +11,7 @@ from tqdm import tqdm
 from custom_ds import BellGrayDS
 from custom_loss import FocalBCELoss
 from custom_model import UNet
-from utils.data_helper import estimate_class_weight, get_os_dependent_paths, get_data_from_list, print_metric_plots
+from utils.data_helper import get_os_dependent_paths, get_data_from_list, print_metric_plots
 
 
 def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epochs, device):
@@ -91,13 +91,13 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
         ("recall", recall_train, recall_val),
         ("f1_score", f1_train, f1_val),
     ]
-    print_metric_plots(metrics_history)
+    print_metric_plots(metrics_history, model_version, save_path)
 
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 3
-    n_epochs = 25  # num of epochs
+    model_version = 1
+    n_epochs = 20  # num of epochs
     batch_sz = 2  # batch size (2 works best on gpu)
     lr = 0.0001  # learning rate
     wd = 0.00001  # weight decay
@@ -117,8 +117,9 @@ if __name__ == '__main__':
     model.to(device=device)
 
     # init model training parameters
-    class_weight_alpha = estimate_class_weight(y_train)
-    print("Class weight alpha: {}".format(class_weight_alpha))
+    # class_weight_alpha = estimate_class_weight(y_train, resize_shape=resize_shape)
+    # print("Class weight alpha: {}".format(class_weight_alpha))
+    class_weight_alpha = 0.75
     loss_fn = FocalBCELoss(alpha=class_weight_alpha, gamma=2.0)
     optimizer = optim.Adam(params=model.parameters(), lr=lr, weight_decay=wd)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)

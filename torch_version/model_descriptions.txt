@@ -1,13 +1,19 @@
 ----- USE THIS TO KEEP TRACK OF DIFFERENCES FOR EACH MODEL -----
 
 Model 1:
-    - deleted
+    - Trained on Tuesday, July 2nd, 2024
+    - Other models show issue with loss function.
+    - This model attempts to resolve this by changing the class weights.
+    - New weights are hard-coded as 0.75 for class 1 and 0.25 for class 0.
+    - Trained for 20 epochs.
 
 Model 2:
+    - trained on Friday, June 28th, 2024
     - retry of initial model (also 10 epochs)
     - no clear sign of overfitting
 
 Model 3:
+    - trained on Sunday, June 30th, 2024
     - 25 epochs
     - trying to see at what point overfitting occurs
     - will use this model for initial testing

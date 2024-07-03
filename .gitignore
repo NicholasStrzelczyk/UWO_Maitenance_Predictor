@@ -3,6 +3,7 @@ example/
 keras_version/
 old_code/
 torch_version/__pycache__/
+torch_version/utils/__pycache__/
 torch_version/model_1/
 torch_version/model_2/
 torch_version/model_3/
