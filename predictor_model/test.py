@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from custom_ds import BellGrayDS
 from custom_loss import FocalBCELoss
-from custom_model import UNetGrayscale, UNetBlackWhite
+from custom_model import UNetGrayscale
 from utils.data_helper import get_data_from_list, get_os_dependent_paths
 
 

@@ -17,6 +17,15 @@ custom_model.py TODO:
 - create a new U-Net architecture that uses RGB images and produces output with 3 classes: dust, metal, and don't care.
 - create a new architecture with MobileNet "Depthwise-Seperable Convolutions"
 
+LABEL_MAKER TODO:
+
+- implement new label making method into script
+
+SYNTH_DATA_MAKER TODO:
+
+- generate grid of valid dust collection regions on original image.
+- apply custom dust cloud maker function to those regions at random.
+
 # GENERAL TODOs:
 
 - (MAIN GOAL) make synthetic dataset that shows dust growth.
