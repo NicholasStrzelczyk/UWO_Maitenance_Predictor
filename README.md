@@ -23,8 +23,8 @@ LABEL_MAKER TODO:
 
 SYNTH_DATA_MAKER TODO:
 
-- generate grid of valid dust collection regions on original image.
-- apply custom dust cloud maker function to those regions at random.
+- present results to team.
+- synthesize some data.
 
 # GENERAL TODOs:
 
