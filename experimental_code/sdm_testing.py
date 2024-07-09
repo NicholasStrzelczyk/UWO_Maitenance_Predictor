@@ -2,9 +2,6 @@ import os
 
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
-from skimage import filters
-from skimage import exposure
 
 
 def show_img(img):
@@ -44,7 +41,7 @@ def remove_metal_grate(img):
 	return result
 
 
-def remove_metal_beams(img):
+def remove_metal_beams_mask(img):
 	# horizontal and vertical crops
 	img[:, 0:120] = 0  # left-side vertical strip
 	img[:, 1800:1920] = 0  # right-side vertical strip
@@ -73,7 +70,7 @@ def remove_metal_beams(img):
 def create_metal_beam_mask(out_path='./metal_mask.png'):
 	result = np.ones(shape=(1080, 1920), dtype=np.uint8)
 	result *= 255
-	result = remove_metal_beams(result)
+	result = remove_metal_beams_mask(result)
 	result = rotate_image(result, 358.3)
 	cv2.imwrite(out_path, result)
 	return result
@@ -188,11 +185,19 @@ def create_synthetic_data(
 
 
 if __name__ == '__main__':
+	mask_path = './pictures/metal_mask.png'
+	dust_path = './pictures/dust1.png'
 	data_dir = '/Users/nick_1/Bell_5G_Data/1080_snapshots/train/images'
 	img_name = '2024_06_13_2pm_snapshot_1.png'
 	img_path = os.path.join(data_dir, img_name)
 
 	vignette_strength_list = [5.0, 3.0, 2.0]
 	for vs in vignette_strength_list:
-		test = create_synthetic_data(img_path, dust_vignette_strength=vs, dust_cloud_size=(7, 33))
+		test = create_synthetic_data(
+			img_path,
+			metal_mask_path=mask_path,
+			dust_img_path=dust_path,
+			dust_vignette_strength=vs,
+			dust_cloud_size=(7, 33)
+		)
 		show_img(test)

@@ -19,12 +19,12 @@ custom_model.py TODO:
 
 LABEL_MAKER TODO:
 
-- implement new label making method into script
+- test the newly designed script.
 
 SYNTH_DATA_MAKER TODO:
 
 - present results to team.
-- synthesize some data.
+- test data synthesis.
 
 # GENERAL TODOs:
 
