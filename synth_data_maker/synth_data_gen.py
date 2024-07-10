@@ -150,12 +150,3 @@ if __name__ == '__main__':
 
 		if image_limit and img_count >= max_images:
 			break
-
-	# ---------------------------------------- #
-	# img_name = '2024_06_13_2pm_snapshot_1.png'
-	# img_path = os.path.join(data_dir, img_name)
-	#
-	# vignette_strength_list = [5.0, 3.0, 2.0]
-	# for vs in vignette_strength_list:
-	# 	test = create_synthetic_data(img_path, dust_vignette_strength=vs, dust_cloud_size=(7, 33))
-	# 	show_img(test)
