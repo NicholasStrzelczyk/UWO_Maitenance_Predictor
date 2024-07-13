@@ -90,7 +90,7 @@ def apply_synthetic_dust(img1, img2, alpha=0.99, stricter_blend=False):
 
 def create_synthetic_data(
 		src_path,
-		metal_mask_path='./metal_mask.png',
+		metal_mask_path='./metal_mask_v2.png',
 		dust_img_path='./dust1.png',
 		dust_vignette_strength=3.0,
 		dust_cloud_size=(7, 17),

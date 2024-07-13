@@ -67,11 +67,41 @@ def remove_metal_beams_mask(img):
 	return img
 
 
-def create_metal_beam_mask(out_path='./metal_mask.png'):
+# made for use with an un-rotated image
+def remove_metal_beams_mask_v2(img):  # July 13th, 2024
+	# diagonal bars
+	cv2.line(img, pt1=(0, 563), pt2=(522, 1080), color=(0, 0, 0), thickness=16)  # bottom-left diagonal bar
+	cv2.line(img, pt1=(1398, 1080), pt2=(1920, 663), color=(0, 0, 0), thickness=16)  # bottom-right diagonal bar
+	cv2.line(img, pt1=(0, 612), pt2=(918, 0), color=(0, 0, 0), thickness=16)  # top-left diagonal bar
+	cv2.line(img, pt1=(1083, 0), pt2=(1920, 643), color=(0, 0, 0), thickness=16)  # top-right diagonal bar
+
+	# polygons
+	poly_list = [  # all pts are [x, y] and listed in CC order starting w/ top left pt
+		# left and right vertical bars
+		np.array([[0, 0], [0, 1080], [80, 1080], [140, 0]], dtype=np.int32),  # left-side
+		np.array([[1848, 0], [1845, 600], [1920, 600], [1920, 0]], dtype=np.int32),  # right-side top
+		np.array([[1865, 600], [1840, 1080], [1920, 1080], [1920, 600]], dtype=np.int32),  # right-side bottom
+		# central-middle bar
+		np.array([[0, 505], [0, 665], [1920, 720], [1920, 565]], dtype=np.int32),
+		# upper-middle bar
+		np.array([[0, 200], [0, 230], [960, 245], [960, 215]], dtype=np.int32),  # left-side
+		np.array([[960, 215], [960, 245], [1920, 305], [1920, 270]], dtype=np.int32),  # right-side
+		# diagonal bar connectors
+		np.array([[0, 515], [0, 660], [205, 490], [190, 460]], dtype=np.int32),  # left-side
+		np.array([[1780, 515], [1763, 545], [1920, 670], [1920, 560]], dtype=np.int32),  # right-side
+		# central-bottom clip
+		np.array([[385, 1065], [360, 1080], [620, 1080], [510, 1070]], dtype=np.int32),
+	]
+	for poly_pts in poly_list:
+		cv2.fillPoly(img, pts=[poly_pts], color=(0, 0, 0))
+
+	return img
+
+
+def create_metal_beam_mask(out_path='./metal_mask_v2.png'):
 	result = np.ones(shape=(1080, 1920), dtype=np.uint8)
 	result *= 255
-	result = remove_metal_beams_mask(result)
-	result = rotate_image(result, 358.3)
+	result = remove_metal_beams_mask_v2(result)
 	cv2.imwrite(out_path, result)
 	return result
 
@@ -185,10 +215,11 @@ def create_synthetic_data(
 
 
 if __name__ == '__main__':
-	mask_path = './pictures/metal_mask.png'
+	mask_path = './pictures/metal_mask_v2.png'
 	dust_path = './pictures/dust1.png'
 	data_dir = '/Users/nick_1/Bell_5G_Data/1080_snapshots/train/images'
-	img_name = '2024_06_13_2pm_snapshot_1.png'
+	# img_name = '2024_06_13_2pm_snapshot_1.png'
+	img_name = '2024_06_14_7pm_snapshot_1.png'  # rainy
 	img_path = os.path.join(data_dir, img_name)
 
 	vignette_strength_list = [5.0, 3.0, 2.0]

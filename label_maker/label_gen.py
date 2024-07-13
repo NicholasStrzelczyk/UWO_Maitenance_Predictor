@@ -82,7 +82,7 @@ if __name__ == '__main__':
 	partition = 'train'  # for train: 06-13 to 06-28, for test: 06-29 to 06-30
 	start_date = date(2024, 6, 13)
 	end_date = date(2024, 6, 28)
-	mask_path = './metal_mask.png'
+	mask_path = './metal_mask_v2.png'
 	output_is_gray = False
 
 	# ----- produce useful variables ----- #
