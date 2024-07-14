@@ -7,18 +7,18 @@ import pandas as pd
 from tqdm import tqdm
 
 
-def list_images_for_date(date_str):
+def list_images_for_date(date_str, data_dir_path):
 	results = []
-	for img_name in os.listdir(data_dir):
+	for img_name in os.listdir(data_dir_path):
 		if date_str in img_name:
 			results.append(img_name)
 	return results
 
 
-def create_data_list(date_list):
+def create_data_list(date_list, data_dir_path):
 	results = []
 	for date_str in tqdm(date_list, desc='Generating lists'):
-		image_list = list_images_for_date(date_str)
+		image_list = list_images_for_date(date_str, data_dir_path)
 		results.append((date_str, image_list))
 	return results
 
@@ -45,14 +45,12 @@ def denoise_to_binary(img):
 	return result
 
 
-def create_label_for_date(averaged_img, mask_img, date_str, label_dir_path):
+def create_label_for_date(averaged_img, mask_img):
 	# obtain background of averaged image (remove metal grate)
 	result = remove_metal_grate(averaged_img)
 	result = cv2.bitwise_and(result, result, mask=mask_img)
 	# denoise the image & convert to B/W binary
 	result = denoise_to_binary(result)
-	# save and return the new label
-	cv2.imwrite(os.path.join(label_dir_path, 'LABEL_{}.png'.format(date_str)), result)
 	return result
 
 
@@ -72,7 +70,7 @@ def generate_labels(data_list, mask_img_path, data_dir_path, label_dir_path, gra
 			# get averaged result of all images for current date
 			image = compute_date_avg_img(image_list, data_dir_path)
 			# generate the binary class label
-			image = create_label_for_date(image, mask_img, date_str, label_dir)
+			image = create_label_for_date(image, mask_img)
 			# save the label image
 			save_label(image, date_str, label_dir_path, as_gray=gray_labels)
 
@@ -91,7 +89,7 @@ if __name__ == '__main__':
 	date_range_list = pd.date_range(start_date, end_date - timedelta(days=1), freq='d').to_list()
 
 	# ----- generate lists ----- #
-	label_data_list = create_data_list(date_range_list)
+	label_data_list = create_data_list(date_range_list, data_dir)
 
 	# ----- generate labels ----- #
 	generate_labels(label_data_list, mask_path, data_dir, label_dir, gray_labels=output_is_gray)
