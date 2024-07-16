@@ -1,6 +1,9 @@
 .idea/
 .DS_Store
+
 AAA_old_code/
+experimental_code/
+label_maker/
 
 predictor_model/.DS_Store
 predictor_model/__pycache__/
@@ -8,5 +11,3 @@ predictor_model/utils/__pycache__/
 predictor_model/model_1/
 predictor_model/model_2/
 predictor_model/model_3/
-
-experimental_code/pictures/

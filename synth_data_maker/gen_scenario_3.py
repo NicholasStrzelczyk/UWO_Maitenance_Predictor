@@ -17,12 +17,13 @@ from synth_data_maker.synth_data_gen import (
 )
 
 
-def interpret_sc1_timeline_csv(timeline_file_path, dust_img_path='./image_files/dust1.png'):
+def interpret_sc3_timeline_csv(timeline_file_path, dust_img_path='./image_files/dust1.png'):
 	df = pd.read_csv(timeline_file_path)
 	total_days = df['day'].values[-1]
 
-	change_days = df[df['changes_occurred'] == 1]['day'].values.tolist()
-	vignettes = df[df['changes_occurred'] == 1]['vignette_strength'].values.tolist()
+	clean_change_days = df[df['clean_changes'] == 1]['day'].values.tolist()
+	growth_change_days = df[df['growth_changes'] == 1]['day'].values.tolist()
+	vignettes = df[df['growth_changes'] == 1]['vignette_strength'].values.tolist()
 
 	dust_img = cv2.imread(dust_img_path, cv2.IMREAD_COLOR)
 	cloud = make_dust_region(dust_img, df['dust_rows'].values[0], df['dust_cols'].values[0])
@@ -33,7 +34,8 @@ def interpret_sc1_timeline_csv(timeline_file_path, dust_img_path='./image_files/
 
 	return {
 		'total_days': total_days,
-		'change_days': change_days,
+		'clean_change_days': clean_change_days,
+		'growth_change_days': growth_change_days,
 		'dust_cloud': cloud,
 		'pt1_xy': (pt1_x, pt1_y),
 		'pt2_xy': (pt2_x, pt2_y),
@@ -41,35 +43,43 @@ def interpret_sc1_timeline_csv(timeline_file_path, dust_img_path='./image_files/
 	}
 
 
-def gen_scenario_1_timeline(
+def gen_scenario_3_timeline(
 		data_dir_path,
 		num_days=30,
 		dust_incr_thresh=11,
 		max_dust_growths=4,
+		clean_interval=10,
 ):
 	current_prob = 0  # current 'probability' value (for lack of better term)
 	growth_num = 0  # number of growth increases that have occurred (max=3)
-	changes = 0  # tracks whether an event occurred in the image
+	growth_changes = 0  # tracks whether an event occurred in the image
+	clean_changes = 0  # tracks when cleaning occurs
 	vignette_strength = 99.9  # tracks the current vignette strength applied to the dust cloud
 
 	# these values stay the same during all of scenario 1
 	dust_vars = get_random_dust_variables(max_dust_growths=max_dust_growths)
 
 	timeline = []
-	for day in tqdm(range(1, num_days + 1), desc='Generating scenario 1 csv file'):
+	for day in tqdm(range(1, num_days + 1), desc='Generating scenario 3 csv file'):
 		current_prob += randint(0, 3)
 
-		if current_prob >= dust_incr_thresh and growth_num < max_dust_growths:
+		if day % clean_interval == 0:
+			vignette_strength = 99.9
+			growth_num = 0
+			current_prob = 0
+			clean_changes = 1
+		elif current_prob >= dust_incr_thresh and growth_num < max_dust_growths:
 			vignette_strength = dust_vars['vignettes'][growth_num]
 			growth_num += 1
 			current_prob = 0
-			changes = 1
+			growth_changes = 1
 		else:
-			changes = 0
+			growth_changes = 0
+			clean_changes = 0
 
 		line = [
 			day, dust_vars['rows'], dust_vars['cols'], dust_vars['loc_x'], dust_vars['loc_y'],
-			vignette_strength, dust_vars['region'], growth_num, current_prob, changes
+			vignette_strength, dust_vars['region'], growth_num, current_prob, growth_changes, clean_changes
 		]
 		timeline.append(line)
 
@@ -77,7 +87,7 @@ def gen_scenario_1_timeline(
 	timeline_file_path = os.path.join(data_dir_path, 'timeline.csv')
 	headers = [
 		'day', 'dust_rows', 'dust_cols', 'dust_x', 'dust_y',
-		'vignette_strength', 'region', 'growths', 'prob', 'changes_occurred'
+		'vignette_strength', 'region', 'growths', 'prob', 'growth_changes', 'clean_changes'
 	]
 	open(timeline_file_path, 'w+').close()  # overwrite/ make new blank file
 	with open(timeline_file_path, 'a', encoding='UTF8', newline='') as file:
@@ -86,7 +96,7 @@ def gen_scenario_1_timeline(
 		writer.writerows(timeline)
 
 
-def gen_scenario_1_images(
+def gen_scenario_3_images(
 		src_dir_path,
 		data_dir_path,
 		dust_img_path='./image_files/dust1.png',
@@ -99,7 +109,7 @@ def gen_scenario_1_images(
 	]
 
 	# step 1: interpret useful csv file contents
-	csv_data = interpret_sc1_timeline_csv(timeline_file_path, dust_img_path)
+	csv_data = interpret_sc3_timeline_csv(timeline_file_path, dust_img_path)
 	dust_cloud = csv_data['dust_cloud']
 	pt1_x, pt1_y = csv_data['pt1_xy']
 	pt2_x, pt2_y = csv_data['pt2_xy']
@@ -107,9 +117,11 @@ def gen_scenario_1_images(
 
 	# step 2: create the images for each day
 	growth_num = 0
-	for day in tqdm(range(1, csv_data['total_days'] + 1), desc='Generating scenario 1 images'):
+	for day in tqdm(range(1, csv_data['total_days'] + 1), desc='Generating scenario 3 images'):
 
-		if day in csv_data['change_days']:
+		if day in csv_data['clean_change_days']:
+			growth_num = 0
+		elif day in csv_data['growth_change_days']:
 			dust_cloud = apply_vignette(csv_data['dust_cloud'], vignettes[growth_num])
 			growth_num += 1
 
@@ -134,10 +146,16 @@ if __name__ == '__main__':
 	# hyperparameters
 	days_in_timeline = 28
 	growth_prob_thresh = 7
+	maintenance_interval = 11
 	data_partition = 'train'  # can be 'train', 'validation', or 'test'
 	src_dir = '/Users/nick_1/Bell_5G_Data/synth_datasets/src_images'
-	data_dir = '/Users/nick_1/Bell_5G_Data/synth_datasets/{}/scenario_1'.format(data_partition)
+	data_dir = '/Users/nick_1/Bell_5G_Data/synth_datasets/{}/scenario_3'.format(data_partition)
 
 	# ----- ----- ----- #
-	gen_scenario_1_timeline(data_dir, num_days=days_in_timeline, dust_incr_thresh=growth_prob_thresh)
-	gen_scenario_1_images(src_dir, data_dir)
+	gen_scenario_3_timeline(
+		data_dir,
+		num_days=days_in_timeline,
+		dust_incr_thresh=growth_prob_thresh,
+		clean_interval=maintenance_interval
+	)
+	gen_scenario_3_images(src_dir, data_dir)

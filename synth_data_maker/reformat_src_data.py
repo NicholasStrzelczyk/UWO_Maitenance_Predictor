@@ -21,9 +21,9 @@ def copy_paste_buffer(buf):
 
 if __name__ == '__main__':
 	# hyperparameters
-	start_date = date(2024, 6, 13)  # range: 06-13 to 06-30 (inclusively)
-	end_date = date(2024, 7, 1)  # end date is not inclusive
-	src_dir = '/Users/nick_1/Bell_5G_Data/synth_datasets/unformatted_ims'
+	start_date = date(2024, 6, 13)  # range: 06-13 to 07-14 (inclusively)
+	end_date = date(2024, 7, 15)  # end date is not inclusive
+	src_dir = '/Users/nick_1/Bell_5G_Data/all_1080_data/'
 	dest_dir = '/Users/nick_1/Bell_5G_Data/synth_datasets/src_images'
 
 	# time and date lists
@@ -33,13 +33,14 @@ if __name__ == '__main__':
 	]
 	date_range_list = pd.date_range(start_date, end_date - timedelta(days=1), freq='d').to_list()
 
-	# obtain path for image and copy/ rename it
+	# --- obtain path for image and copy/ rename it --- #
 	day_num = 1
+	dates_not_found = []
 	files_not_found = []
 
 	for timestamp in tqdm(date_range_list, desc='Copying images'):
 		date_str = str(timestamp).split(' ')[0].replace('-', '_').strip()
-		files_not_found_for_date = 0
+		files_found_for_date = 0
 		file_copy_buffer = []
 
 		for hour in hour_list:
@@ -49,15 +50,22 @@ if __name__ == '__main__':
 
 			if exists_in_dir(file_name, src_dir):
 				file_copy_buffer.append((file_path, dest_path))
+				files_found_for_date += 1
 			else:
-				files_not_found_for_date += 1
 				files_not_found.append(file_name)
 
-		if files_not_found_for_date == 0:
+		if files_found_for_date > 0:
 			copy_paste_buffer(file_copy_buffer)
 			day_num += 1
+		else:
+			dates_not_found.append(date_str)
+	# ------------------------------------------------- #
 
-	print('Could not find these files:')
+	print('Could not find these specific files:')
 	for file in files_not_found:
 		print('\t{}'.format(file))
+
+	print('0 files were found for these dates:')
+	for date_str in dates_not_found:
+		print('\t{}'.format(date_str))
 

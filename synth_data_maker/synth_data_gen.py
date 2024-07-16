@@ -1,4 +1,3 @@
-import math
 import os
 from random import randint
 
@@ -8,9 +7,10 @@ from tqdm import tqdm
 
 
 def get_random_dust_variables(
-		dust_img_path='./dust1.png',
+		dust_img_path='./image_files/dust1.png',
 		max_cols=35,
-		max_rows=10
+		max_rows=10,
+		max_dust_growths=5,
 ):
 	rows = randint(3, max_rows)
 	cols = randint(rows, max_cols)
@@ -20,14 +20,26 @@ def get_random_dust_variables(
 	# valid region 2 = [x: 120-1840, y: 700-1080]
 	dust_h, dust_w = cv2.imread(dust_img_path).shape[:2]  # [width=20, height=36]
 	min_location_y = 0 if region_num == 1 else 700
-	max_location_y = 510 - (rows * dust_h) if region_num == 1 else 1080
+	max_location_y = 510 - (rows * dust_h) if region_num == 1 else 1080 - (rows * dust_h)
 	min_location_x = 120
 	max_location_x = 1840 - (cols * dust_w)
 
 	location_y = randint(min_location_y, max_location_y)
 	location_x = randint(min_location_x, max_location_x)
 
-	return (rows, cols), (location_x, location_y), region_num
+	vignette_list = []
+	for j in range(max_dust_growths):
+		vignette_list.append(j + 2.0)  # range = {2.0 : max_dust_growth + 2.0}
+	vignette_list = sorted(vignette_list, reverse=True)
+
+	return {
+		'rows': rows,
+		'cols': cols,
+		'loc_x': location_x,
+		'loc_y': location_y,
+		'vignettes': vignette_list,
+		'region': region_num,
+	}
 
 
 def show_img(img):
@@ -40,6 +52,13 @@ def remove_metal_grate(img):
 	result = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 	t = cv2.adaptiveThreshold(result, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
 	result = cv2.inpaint(img, t, 3, cv2.INPAINT_TELEA)
+	return result
+
+
+def denoise_to_binary(img):
+	result = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+	result = cv2.fastNlMeansDenoising(result, None, 20, 7, 21)
+	result = cv2.threshold(result, 0, 255, cv2.THRESH_OTSU)[1]
 	return result
 
 
@@ -69,23 +88,23 @@ def apply_vignette(img, strength):
 	return result
 
 
-def apply_synthetic_dust(img1, img2, alpha=0.99):
+def apply_synthetic_dust(img1, img2, alpha=0.99, stricter_blend=False):
 	gray_img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-	# gray_img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+	gray_img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
 	thresh_img1 = cv2.threshold(gray_img1, 0, 255, cv2.THRESH_OTSU)[0]  # OTSU for img1
-	# thresh_img2 = cv2.threshold(gray_img2, 0, 255, cv2.THRESH_OTSU)[0]  # OTSU for img2
+	thresh_img2 = cv2.threshold(gray_img2, 0, 255, cv2.THRESH_OTSU)[0]  # OTSU for img2
 	result = np.zeros(img1.shape, np.uint8)
 	for y in range(result.shape[0]):  # loop through pixels in y-axis
 		for x in range(result.shape[1]):  # loop through pixels in x-axis
 			for c in range(result.shape[2]):  # loop through color channels
 				if gray_img1[y, x] < thresh_img1:  # if this pixel belongs to the background of img1 (not metal grate)
-					# if stricter_blend:  # this preserves more of the original image's background noise
-					# 	if gray_img2[y, x] >= thresh_img2:  # blend pixels according to alpha
-					# 		result[y, x, c] = ((1 - alpha) * img1[y, x, c]) + (alpha * img2[y, x, c])
-					# 	else:  # makes pixel blend more fair toward edges of vignette
-					# 		result[y, x, c] = (0.5 * img1[y, x, c]) + (0.5 * img2[y, x, c])
-					# else:  # blend pixels according to alpha
-					result[y, x, c] = ((1 - alpha) * img1[y, x, c]) + (alpha * img2[y, x, c])
+					if stricter_blend:  # this preserves more of the original image's background noise
+						if gray_img2[y, x] >= thresh_img2:  # blend pixels according to alpha
+							result[y, x, c] = ((1 - alpha) * img1[y, x, c]) + (alpha * img2[y, x, c])
+						else:  # makes pixel blend more fair toward edges of vignette
+							result[y, x, c] = (0.5 * img1[y, x, c]) + (0.5 * img2[y, x, c])
+					else:  # blend pixels according to alpha
+						result[y, x, c] = ((1 - alpha) * img1[y, x, c]) + (alpha * img2[y, x, c])
 				else:  # else this pixel belongs to the foreground of img1 (the metal grate)
 					result[y, x, c] = img1[y, x, c]  # color pixel same as img1
 	return result
@@ -93,8 +112,8 @@ def apply_synthetic_dust(img1, img2, alpha=0.99):
 
 def create_synthetic_data(
 		src_path,
-		metal_mask_path='./metal_mask_v2.png',
-		dust_img_path='./dust1.png',
+		metal_mask_path='./image_files/metal_mask_v2.png',
+		dust_img_path='./image_files/dust1.png',
 		dust_vignette_strength=3.0,
 		dust_cloud_size=(7, 17),
 		dust_location=(600, 270),
@@ -130,13 +149,13 @@ if __name__ == '__main__':
 	vignette_strength_list = [5.0, 3.0, 2.0]
 	data_dir = '/Users/nick_1/Bell_5G_Data/1080_snapshots/train/images'
 	save_dir = '/Users/nick_1/Bell_5G_Data/1080_snapshots/train/synth_images'
-	# mask_path = './metal_mask.png'
-	# dust_path = './dust1.png'
+	# mask_path = './image_files/metal_mask.png'
+	# dust_path = './image_files/dust1.png'
 
 	# ---------------------------------------- #
 	for img_name in tqdm(os.listdir(data_dir), desc='Generating synthetic images'):
 		# obtain randomly generated synthetic data parameters
-		size, location = get_random_dust_variables()
+		size, location, _, _ = get_random_dust_variables()
 
 		# create and save synthetic data objects for varying vignette strengths
 		for i in range(len(vignette_strength_list)):

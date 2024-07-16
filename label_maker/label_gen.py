@@ -27,8 +27,9 @@ def compute_date_avg_img(images_path_list, data_dir_path):
 	img_list = []  # list to contain all images for specified date
 	for img_name in images_path_list:
 		img_list.append(cv2.imread(os.path.join(data_dir_path, img_name), cv2.IMREAD_COLOR))
+	img_list = np.array(img_list)
 	result = np.average(img_list, axis=0)
-	return result
+	return result.astype(np.uint8)
 
 
 def remove_metal_grate(img):
