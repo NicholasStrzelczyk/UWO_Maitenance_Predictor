@@ -25,3 +25,5 @@ SYNTH_DATA_MAKER TODO:
 - sc3: 1 dust spot, with periodic maintenance (DONE)
 - sc4: multiple dust spots, with periodic maintenance (DONE)
 -  (IF THERE IS TIME) for sc3 & sc4, make random dust cloud(s) after every time cleaning occurs.
+- IDEA: create common functions so that more code is reused to generate scenarios.
+- IDEA: ideally one script file generates all 4 scenarios for a specific partition.
