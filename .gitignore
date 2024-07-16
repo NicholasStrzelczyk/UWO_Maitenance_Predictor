@@ -2,8 +2,7 @@
 .DS_Store
 
 AAA_old_code/
-experimental_code/
-label_maker/
+BBB_old_code_2/
 
 predictor_model/.DS_Store
 predictor_model/__pycache__/
