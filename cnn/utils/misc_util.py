@@ -9,15 +9,15 @@ def get_os_dependent_paths(model_ver, partition):
     if sys.platform == 'darwin':  # mac
         data_dir = '/Users/nick_1/Bell_5G_Data/synth_datasets'
         list_path = os.path.join(data_dir, '{}/list_{}.txt'.format(partition, sys.platform))
-        save_path = './cnn_model/model_{}'.format(model_ver)
+        save_path = './model_{}'.format(model_ver)
     elif sys.platform == 'win32':  # windows
         data_dir = 'C:\\Users\\NickS\\UWO_Summer_Research\\Bell_5G_Data\\synth_datasets'
         list_path = os.path.join(data_dir, '{}\\list_{}.txt'.format(partition, sys.platform))
-        save_path = '.\\cnn_model\\model_{}'.format(model_ver)
+        save_path = '.\\model_{}'.format(model_ver)
     else:  # ubuntu
         data_dir = '/mnt/storage_1/bell_5g_datasets/synth_datasets'
         list_path = os.path.join(data_dir, '{}/list_{}.txt'.format(partition, sys.platform))
-        save_path = './cnn_model/model_{}'.format(model_ver)
+        save_path = './model_{}'.format(model_ver)
 
     # make the folder if it does not exist
     if not os.path.exists(save_path):
