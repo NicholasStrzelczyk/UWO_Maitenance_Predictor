@@ -1,17 +1,12 @@
-import os
 from datetime import datetime
 
-import numpy as np
-import torch
-from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 from torchmetrics.classification import BinaryF1Score, BinaryPrecision, BinaryRecall
 from tqdm import tqdm
 
-from custom_ds import BellGrayDS
-from custom_loss import FocalBCELoss
-from custom_model import UNetGrayscale
-from utils.data_helper import get_data_from_list, get_os_dependent_paths
+from custom_ds import CustomDS
+from unet_model import UNet
+from utils.misc_util import *
 
 
 def test(model, loss_fn, test_loader, device):
@@ -52,8 +47,8 @@ def test(model, loss_fn, test_loader, device):
             del image, target, output
 
     # --- print epoch results --- #
-    print("{} testing metrics:".format(datetime.now()))
-    print("\tloss: {:.9f}, precision: {:.9f}, recall: {:.9f}, f1_score: {:.9f}".format(
+    log_and_print("{} testing metrics:".format(datetime.now()))
+    log_and_print("\tloss: {:.9f}, precision: {:.9f}, recall: {:.9f}, f1_score: {:.9f}".format(
         test_loss / len(test_loader), test_bp / len(test_loader),
         test_br / len(test_loader), test_bf1 / len(test_loader)))
 
@@ -69,27 +64,30 @@ def test(model, loss_fn, test_loader, device):
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 3
+    model_version = 1
     resize_shape = (512, 512)
     list_path, save_path = get_os_dependent_paths(model_version, partition='test')
     weights_file = os.path.join(save_path, "model_{}_weights.pth".format(model_version))
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    # set deterministic seed
+    make_deterministic(2024)
+
+    # initialize console logger
+    setup_logger(os.path.join(save_path, 'testing.log'))
+
     # set up dataset(s)
     x_test, y_test, _, _ = get_data_from_list(list_path, split=None)
-    test_ds = BellGrayDS(x_test, y_test, resize_shape=resize_shape)
+    test_ds = CustomDS(x_test, y_test, resize_shape=resize_shape)
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
 
     # compile model
-    model = UNetGrayscale()
+    model = UNet()
     model.load_state_dict(torch.load(weights_file, map_location=device))
     model.to(device=device)
 
     # init model training parameters
-    # class_weight_alpha = estimate_class_weight(y_test, resize_shape=resize_shape)
-    # print("Class weight alpha: {}".format(class_weight_alpha))
-    class_weight_alpha = 0.75
-    loss_fn = FocalBCELoss(alpha=class_weight_alpha, gamma=2.0)
+    loss_fn = torch.nn.BCELoss()
 
     # test model
     test(model, loss_fn, test_loader, device)
