@@ -114,7 +114,7 @@ if __name__ == '__main__':
 
     # set up logger and deterministic seed
     setup_basic_logger(os.path.join(save_path, 'training.log'))  # initialize logger
-    make_deterministic(seed)  # set deterministic seed
+    # make_deterministic(seed)  # set deterministic seed
 
     # print training hyperparameters
     print_hyperparams(
@@ -135,9 +135,10 @@ if __name__ == '__main__':
     model.to(device=device)
 
     # init model training parameters
-    # loss_fn = torch.nn.BCELoss()
-    loss_fn = torch.nn.CrossEntropyLoss(weight=torch.tensor([1, 5]), reduction='mean')
-    optimizer = torch.optim.SGD(params=model.parameters(), lr=lr, momentum=momentum)
+    loss_fn = torch.nn.BCELoss()
+    # loss_fn = torch.nn.CrossEntropyLoss(weight=torch.tensor([1, 5]), reduction='mean')
+    # optimizer = torch.optim.SGD(params=model.parameters(), lr=lr, momentum=momentum)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, weight_decay=1e-5)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 
     # run torch summary report
