@@ -107,14 +107,14 @@ if __name__ == '__main__':
     loss_fn_name = 'binary_cross_entropy'
     optimizer_name = 'sgd'
     scheduler_name = 'reduce_on_plateau'
-    # seed = get_random_seed()  # generate random seed
-    seed = 2024
+    seed = get_random_seed()  # generate random seed
+    # seed = 2024
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     list_path, save_path = get_os_dependent_paths(model_version, partition='train')
 
     # set up logger and deterministic seed
     setup_basic_logger(os.path.join(save_path, 'training.log'))  # initialize logger
-    # make_deterministic(seed)  # set deterministic seed
+    make_deterministic(seed)  # set deterministic seed
 
     # print training hyperparameters
     print_hyperparams(
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     )
 
     # set up dataset(s)
-    x_train, y_train, x_val, y_val = get_data_from_list(list_path, split=0.2)
+    x_train, y_train, x_val, y_val = get_data_from_list(list_path, split=0.2, seed=seed)
     train_ds = CustomDS(x_train, y_train, resize_shape=resize_shape)
     val_ds = CustomDS(x_val, y_val, resize_shape=resize_shape)
     train_loader = DataLoader(train_ds, batch_size=batch_sz, shuffle=True)
@@ -136,9 +136,7 @@ if __name__ == '__main__':
 
     # init model training parameters
     loss_fn = torch.nn.BCELoss()
-    # loss_fn = torch.nn.CrossEntropyLoss(weight=torch.tensor([1, 5]), reduction='mean')
-    # optimizer = torch.optim.SGD(params=model.parameters(), lr=lr, momentum=momentum)
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, weight_decay=1e-5)
+    optimizer = torch.optim.SGD(params=model.parameters(), lr=lr, momentum=momentum)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 
     # run torch summary report

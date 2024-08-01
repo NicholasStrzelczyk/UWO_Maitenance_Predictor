@@ -22,5 +22,5 @@ def make_deterministic(seed):
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
-    torch.manual_seed(2024)
+    torch.manual_seed(seed)
     torch.use_deterministic_algorithms(True)

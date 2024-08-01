@@ -10,16 +10,16 @@ def data_to_xy(data, seperator=" "):
     return x_set, y_set
 
 
-def get_data_from_list(list_path, split=None):
+def get_data_from_list(list_path, split=None, seed=None):
     all_data = []
     for line in open(list_path, "r"):
         all_data.append(line)
 
     x1, y1, x2, y2 = None, None, None, None
 
-    if split is not None:
+    if split is not None and seed is not None:
         assert (0.01 <= split <= 0.99)
-        data_p1, data_p2 = train_test_split(all_data, test_size=split, random_state=42, shuffle=True)
+        data_p1, data_p2 = train_test_split(all_data, test_size=split, random_state=seed, shuffle=True)
         x1, y1 = data_to_xy(data_p1, seperator=" ")
         x2, y2 = data_to_xy(data_p2, seperator=" ")
     else:
