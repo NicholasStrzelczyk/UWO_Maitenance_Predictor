@@ -99,11 +99,11 @@ if __name__ == '__main__':
     model_version = 1
     n_epochs = 20  # num of epochs
     batch_sz = 8  # batch size
-    lr = 0.0001  # learning rate
-    momentum = 0.99  # optimizer momentum (used in U-Net paper for training)
+    lr = 0.001  # learning rate (1e-3 is default for Adam)
+    wd = 0.00001  # weight decay (0.0 is default for Adam)
     resize_shape = (512, 512)  # same size used in U-Net paper for training
     loss_fn_name = 'binary_cross_entropy'
-    optimizer_name = 'sgd'
+    optimizer_name = 'adam'
     scheduler_name = 'reduce_on_plateau'
     seed = get_random_seed()  # generate random seed
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     # print training hyperparameters
     print_hyperparams(
         model_ver=model_version, model_name=model_name, num_epochs=n_epochs, batch_size=batch_sz, learn_rate=lr,
-        momentum=momentum, resize_shape=resize_shape, loss_fn_name=loss_fn_name, optimizer_name=optimizer_name,
+        weigh_decay=wd, resize_shape=resize_shape, loss_fn_name=loss_fn_name, optimizer_name=optimizer_name,
         scheduler_name=scheduler_name, seed=seed, device=device
     )
 
@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
     # init model training parameters
     loss_fn = torch.nn.BCELoss()
-    optimizer = torch.optim.SGD(params=model.parameters(), lr=lr, momentum=momentum)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, weight_decay=wd)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 
     # run torch summary report
