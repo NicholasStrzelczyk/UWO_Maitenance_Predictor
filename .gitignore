@@ -3,8 +3,9 @@
 **/.DS_Store
 **/__pycache__/
 
-# files that are too large to upload
+# files types
 *.pth
+*.log
 *_predictions.png
 
 # legacy code directories
