@@ -3,7 +3,8 @@ from datetime import datetime
 
 import torch
 from torch.utils.data import DataLoader
-from torchmetrics.functional.classification import multiclass_accuracy, binary_f1_score, binary_jaccard_index
+from torchmetrics.functional import dice
+from torchmetrics.functional.classification import binary_f1_score, binary_jaccard_index
 from torchsummary import summary
 from tqdm import tqdm
 
@@ -19,9 +20,9 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
     global model_name, model_version, save_path
 
     losses_train, losses_val = [], []
-    acc_c1_train, acc_c1_val = [], []
     f1_train, f1_val = [], []
     jaccard_train, jaccard_val = [], []
+    dice_train, dice_val = [], []
 
     # --- iterate through all epochs --- #
     log_and_print("{} starting training...".format(datetime.now()))
@@ -29,7 +30,7 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 
         # --- training step --- #
         model.train()
-        epoch_loss, epoch_w_acc, epoch_f1, epoch_jac = 0.0, 0.0, 0.0, 0.0
+        epoch_loss, epoch_f1, epoch_jac, epoch_dice = 0.0, 0.0, 0.0, 0.0
         for images, targets in tqdm(train_loader, desc="epoch {} train progress".format(epoch + 1)):
             images = images.to(device=device)
             targets = targets.to(device=device)
@@ -39,19 +40,19 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
-            epoch_w_acc += multiclass_accuracy(outputs.long(), targets.long(), num_classes=2, average='weighted').item()
             epoch_f1 += binary_f1_score(outputs, targets).item()
             epoch_jac += binary_jaccard_index(outputs, targets, threshold=0.5).item()
+            epoch_dice += dice(outputs, targets, threshold=0.5).item()
             del images, targets, outputs
 
         losses_train.append(epoch_loss / len(train_loader))
-        acc_c1_train.append(epoch_w_acc / len(train_loader))
         f1_train.append(epoch_f1 / len(train_loader))
         jaccard_train.append(epoch_jac / len(train_loader))
+        dice_train.append(epoch_dice / len(train_loader))
 
         # --- validation step --- #
         model.eval()
-        epoch_loss, epoch_w_acc, epoch_f1, epoch_jac = 0.0, 0.0, 0.0, 0.0
+        epoch_loss, epoch_f1, epoch_jac, epoch_dice = 0.0, 0.0, 0.0, 0.0
         with torch.no_grad():
             for images, targets in tqdm(val_loader, desc="epoch {} val progress".format(epoch + 1)):
                 images = images.to(device=device)
@@ -59,32 +60,33 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
                 outputs = model(images)
                 loss = loss_fn(outputs, targets)
                 epoch_loss += loss.item()
-                epoch_w_acc += multiclass_accuracy(outputs.long(), targets.long(), num_classes=2, average='weighted').item()
                 epoch_f1 += binary_f1_score(outputs, targets).item()
+                epoch_jac += binary_jaccard_index(outputs, targets, threshold=0.5).item()
+                epoch_dice += dice(outputs, targets, threshold=0.5).item()
                 del images, targets, outputs
 
         scheduler.step(epoch_loss)  # using validation loss
 
         losses_val.append(epoch_loss / len(val_loader))
-        acc_c1_val.append(epoch_w_acc / len(val_loader))
         f1_val.append(epoch_f1 / len(val_loader))
         jaccard_val.append(epoch_jac / len(val_loader))
+        dice_val.append(epoch_dice / len(val_loader))
 
         # --- print epoch results --- #
         log_and_print("{} epoch {}/{} metrics:".format(datetime.now(), epoch + 1, n_epochs))
-        log_and_print("\t[train] loss: {:.9f}, weighted_acc: {:.9f}, f1_score: {:.9f}, jaccard_idx: {:.9f}".format(
-            losses_train[epoch], acc_c1_train[epoch], f1_train[epoch], jaccard_train[epoch]))
-        log_and_print("\t[valid] loss: {:.9f}, weighted_acc: {:.9f}, f1_score: {:.9f}, jaccard_idx: {:.9f}".format(
-            losses_val[epoch], acc_c1_val[epoch], f1_val[epoch], jaccard_val[epoch]))
+        log_and_print("\t[train] loss: {:.9f}, f1_score: {:.9f}, jaccard_idx: {:.9f}, dice_score: {:.9f}".format(
+            losses_train[epoch], f1_train[epoch], jaccard_train[epoch], dice_train[epoch]))
+        log_and_print("\t[valid] loss: {:.9f}, f1_score: {:.9f}, jaccard_idx: {:.9f}, dice_score: {:.9f}".format(
+            losses_val[epoch], f1_val[epoch], jaccard_val[epoch], dice_val[epoch]))
 
     # --- save weights and plot metrics --- #
     log_and_print("{} saving weights and generating plots...".format(datetime.now()))
     torch.save(model.state_dict(), os.path.join(save_path, "model_{}_weights.pth".format(model_version)))
     metrics_history = [
         ("loss", losses_train, losses_val),
-        ("weighted_accuracy", acc_c1_train, acc_c1_val),
         ("f1_score", f1_train, f1_val),
         ("jaccard_index", jaccard_train, jaccard_val),
+        ("dice_score", dice_train, dice_val),
     ]
     print_metric_plots(metrics_history, model_version, save_path)
     log_and_print("{} training complete.".format(datetime.now()))
