@@ -1,0 +1,14 @@
+Hyperparameters:
+	model_ver: 1
+	model_name: basic_unet
+	num_epochs: 20
+	batch_size: 8
+	learn_rate: 0.001
+	weigh_decay: 1e-05
+	resize_shape: (512, 512)
+	loss_fn_name: binary_cross_entropy
+	optimizer_name: adam
+	scheduler_name: reduce_on_plateau
+	seed: 2159509889
+	device: cpu
+2024-08-02 16:24:53.378203 starting training...

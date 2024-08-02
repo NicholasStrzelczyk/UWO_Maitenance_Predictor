@@ -42,7 +42,7 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
             epoch_loss += loss.item()
             epoch_f1 += binary_f1_score(outputs, targets).item()
             epoch_jac += binary_jaccard_index(outputs, targets, threshold=0.5).item()
-            epoch_dice += dice(outputs, targets, threshold=0.5).item()
+            epoch_dice += dice(outputs, targets.long(), threshold=0.5).item()
             del images, targets, outputs
 
         losses_train.append(epoch_loss / len(train_loader))
@@ -62,7 +62,7 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
                 epoch_loss += loss.item()
                 epoch_f1 += binary_f1_score(outputs, targets).item()
                 epoch_jac += binary_jaccard_index(outputs, targets, threshold=0.5).item()
-                epoch_dice += dice(outputs, targets, threshold=0.5).item()
+                epoch_dice += dice(outputs, targets.long(), threshold=0.5).item()
                 del images, targets, outputs
 
         scheduler.step(epoch_loss)  # using validation loss
