@@ -3,7 +3,7 @@ from datetime import datetime
 
 import torch
 from torch.utils.data import DataLoader
-from torchmetrics.functional.classification import multiclass_accuracy, binary_f1_score
+from torchmetrics.functional.classification import multiclass_accuracy, binary_f1_score, binary_accuracy
 from torchsummary import summary
 from tqdm import tqdm
 
@@ -19,7 +19,7 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
     global model_name, model_version, save_path
 
     losses_train, losses_val = [], []
-    acc_c0_train, acc_c0_val = [], []
+    acc_train, acc_val = [], []
     acc_c1_train, acc_c1_val = [], []
     f1_train, f1_val = [], []
 
@@ -29,7 +29,7 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 
         # --- training step --- #
         model.train()
-        epoch_loss, epoch_acc_c0, epoch_acc_c1, epoch_f1 = 0.0, 0.0, 0.0, 0.0
+        epoch_loss, epoch_acc, epoch_acc_c1, epoch_f1 = 0.0, 0.0, 0.0, 0.0
         for images, targets in tqdm(train_loader, desc="epoch {} train progress".format(epoch + 1)):
             images = images.to(device=device)
             targets = targets.to(device=device)
@@ -39,20 +39,19 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
-            total_acc = multiclass_accuracy(outputs, targets, num_classes=2, average=None)
-            epoch_acc_c0 += total_acc[0].item()
-            epoch_acc_c1 += total_acc[1].item()
+            epoch_acc += binary_accuracy(outputs, targets, threshold=0.5).item()
+            epoch_acc_c1 += multiclass_accuracy(outputs.long(), targets.long(), num_classes=2, average=None)[-1].item()
             epoch_f1 += binary_f1_score(outputs, targets).item()
             del images, targets, outputs
 
         losses_train.append(epoch_loss / len(train_loader))
-        acc_c0_train.append(epoch_acc_c0 / len(train_loader))
+        acc_train.append(epoch_acc / len(train_loader))
         acc_c1_train.append(epoch_acc_c1 / len(train_loader))
         f1_train.append(epoch_f1 / len(train_loader))
 
         # --- validation step --- #
         model.eval()
-        epoch_loss, epoch_acc_c0, epoch_acc_c1, epoch_f1 = 0.0, 0.0, 0.0, 0.0
+        epoch_loss, epoch_acc, epoch_acc_c1, epoch_f1 = 0.0, 0.0, 0.0, 0.0
         with torch.no_grad():
             for images, targets in tqdm(val_loader, desc="epoch {} val progress".format(epoch + 1)):
                 images = images.to(device=device)
@@ -60,32 +59,31 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
                 outputs = model(images)
                 loss = loss_fn(outputs, targets)
                 epoch_loss += loss.item()
-                total_acc = multiclass_accuracy(outputs, targets, num_classes=2, average=None)
-                epoch_acc_c0 += total_acc[0].item()
-                epoch_acc_c1 += total_acc[1].item()
+                epoch_acc += binary_accuracy(outputs, targets, threshold=0.5).item()
+                epoch_acc_c1 += multiclass_accuracy(outputs.long(), targets.long(), num_classes=2, average=None)[-1].item()
                 epoch_f1 += binary_f1_score(outputs, targets).item()
                 del images, targets, outputs
 
         scheduler.step(epoch_loss)  # using validation loss
 
         losses_val.append(epoch_loss / len(val_loader))
-        acc_c0_val.append(epoch_acc_c0 / len(val_loader))
+        acc_val.append(epoch_acc / len(val_loader))
         acc_c1_val.append(epoch_acc_c1 / len(val_loader))
         f1_val.append(epoch_f1 / len(val_loader))
 
         # --- print epoch results --- #
         log_and_print("{} epoch {}/{} metrics:".format(datetime.now(), epoch + 1, n_epochs))
-        log_and_print("\t[train] loss: {:.9f}, c0_accuracy: {:.9f}, c1_accuracy: {:.9f}, f1_score: {:.9f}".format(
-            losses_train[epoch], acc_c0_train[epoch], acc_c1_train[epoch], f1_train[epoch]))
-        log_and_print("\t[valid] loss: {:.9f}, c0_accuracy: {:.9f}, c1_accuracy: {:.9f}, f1_score: {:.9f}".format(
-            losses_val[epoch], acc_c0_val[epoch], acc_c1_val[epoch], f1_val[epoch]))
+        log_and_print("\t[train] loss: {:.9f}, accuracy: {:.9f}, c1_accuracy: {:.9f}, f1_score: {:.9f}".format(
+            losses_train[epoch], acc_train[epoch], acc_c1_train[epoch], f1_train[epoch]))
+        log_and_print("\t[valid] loss: {:.9f}, accuracy: {:.9f}, c1_accuracy: {:.9f}, f1_score: {:.9f}".format(
+            losses_val[epoch], acc_val[epoch], acc_c1_val[epoch], f1_val[epoch]))
 
     # --- save weights and plot metrics --- #
     log_and_print("{} saving weights and generating plots...".format(datetime.now()))
     torch.save(model.state_dict(), os.path.join(save_path, "model_{}_weights.pth".format(model_version)))
     metrics_history = [
         ("loss", losses_train, losses_val),
-        ("class_0_accuracy", acc_c0_train, acc_c0_val),
+        ("accuracy", acc_train, acc_val),
         ("class_1_accuracy", acc_c1_train, acc_c1_val),
         ("f1_score", f1_train, f1_val),
     ]
