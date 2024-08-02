@@ -124,7 +124,7 @@ if __name__ == '__main__':
     x_train, y_train, x_val, y_val = get_data_from_list(list_path, split=0.2, seed=seed)
     train_ds = CustomDS(x_train, y_train, resize_shape=resize_shape)
     val_ds = CustomDS(x_val, y_val, resize_shape=resize_shape)
-    train_loader = DataLoader(train_ds, batch_size=batch_sz, shuffle=True)
+    train_loader = DataLoader(train_ds, batch_size=batch_sz, shuffle=False)
     val_loader = DataLoader(val_ds, batch_size=batch_sz, shuffle=False)
 
     # compile model
