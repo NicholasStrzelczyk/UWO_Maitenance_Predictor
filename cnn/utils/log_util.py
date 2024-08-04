@@ -6,7 +6,7 @@ def setup_basic_logger(file_path):
         filename=file_path,
         filemode='w',
         format="%(message)s",
-        level=logging.DEBUG,
+        level=logging.INFO,
     )
 
 

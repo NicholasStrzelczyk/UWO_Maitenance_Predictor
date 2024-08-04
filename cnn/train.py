@@ -96,7 +96,7 @@ if __name__ == '__main__':
     # hyperparameters
     model_name = 'basic_unet'
     model_version = 2
-    n_epochs = 50  # num of epochs
+    n_epochs = 30  # num of epochs
     batch_sz = 8  # batch size
     lr = 0.001  # learning rate (1e-3 is default for Adam)
     wd = 0.00001  # weight decay (0.0 is default for Adam)
@@ -104,7 +104,8 @@ if __name__ == '__main__':
     loss_fn_name = 'binary_cross_entropy'
     optimizer_name = 'adam'
     scheduler_name = 'reduce_on_plateau'
-    seed = get_random_seed()  # generate random seed
+    seed = 222333444  # custom seed
+    # seed = get_random_seed()  # generate random seed
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     list_path, save_path = get_os_dependent_paths(model_version, partition='train')
 
