@@ -8,6 +8,11 @@
 *.log
 *_predictions.png
 
+# model save directories (manually copy these)
+model_1/
+model_2/
+model_3/
+
 # legacy code directories
 AAA_old_code/
 BBB_old_code/
