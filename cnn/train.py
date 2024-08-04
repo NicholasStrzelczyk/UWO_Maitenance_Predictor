@@ -95,8 +95,8 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 if __name__ == '__main__':
     # hyperparameters
     model_name = 'basic_unet'
-    model_version = 1
-    n_epochs = 20  # num of epochs
+    model_version = 2
+    n_epochs = 50  # num of epochs
     batch_sz = 8  # batch size
     lr = 0.001  # learning rate (1e-3 is default for Adam)
     wd = 0.00001  # weight decay (0.0 is default for Adam)
