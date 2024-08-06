@@ -5,13 +5,13 @@ import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
+from torchmetrics.classification import BinaryPrecisionRecallCurve
 from torchmetrics.functional.classification import binary_f1_score, binary_jaccard_index
 from tqdm import tqdm
 
 from utils.misc_util import get_os_dependent_paths
 from utils.data_import_util import get_data_from_list
 from utils.log_util import setup_basic_logger, log_and_print, print_hyperparams
-from utils.seed_util import make_deterministic
 from custom_ds import CustomDS
 from unet_model import UNet
 
@@ -29,6 +29,8 @@ def print_prediction(best_pred, worst_pred, metric_name, metric_value_best, metr
 
 def test(model, loss_fn, test_loader, device):
     global model_version, save_path
+
+    bprc = BinaryPrecisionRecallCurve(thresholds=[0.5])
 
     test_loss, test_f1, test_jac = 0.0, 0.0, 0.0
     best_f1, worst_f1 = 0.0, 1.0
@@ -64,6 +66,9 @@ def test(model, loss_fn, test_loader, device):
             test_loss += loss
             test_f1 += f1_score
             test_jac += jac_idx
+
+            bprc.update(output, target)
+
             del image, target, output
 
     # --- print epoch results --- #
@@ -75,6 +80,10 @@ def test(model, loss_fn, test_loader, device):
     log_and_print("{} generating prediction samples...".format(datetime.now()))
     print_prediction(best_prediction_f1, worst_prediction_f1, 'f1_score', best_f1, worst_f1)
     print_prediction(best_prediction_jac, worst_prediction_jac, 'jaccard_index', best_jac, worst_jac)
+
+    fig_bprc, ax_bprc = bprc.plot(score=True)
+    plt.savefig(os.path.join(save_path, 'model_{}_precision_recall_curve.png'.format(model_version)))
+
     log_and_print("{} testing complete.".format(datetime.now()))
 
 
@@ -83,18 +92,16 @@ if __name__ == '__main__':
     model_version = 3
     resize_shape = (512, 512)
     loss_fn_name = 'binary_cross_entropy'
-    seed = 222333444  # same seed as training
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     list_path, save_path = get_os_dependent_paths(model_version, partition='test')
     weights_file = os.path.join(save_path, "model_{}_weights.pth".format(model_version))
 
     # set up logger and deterministic seed
     setup_basic_logger(os.path.join(save_path, 'testing.log'))
-    make_deterministic(seed)
 
     # print training hyperparameters
     print_hyperparams(
-        model_ver=model_version, resize_shape=resize_shape, loss_fn_name=loss_fn_name, seed=seed, device=device
+        model_ver=model_version, resize_shape=resize_shape, loss_fn_name=loss_fn_name, device=device
     )
 
     # set up dataset(s)
