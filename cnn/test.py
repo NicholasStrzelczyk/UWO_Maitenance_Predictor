@@ -58,10 +58,10 @@ def test(model, loss_fn, test_loader, device):
 
             if jac_idx > best_jac:
                 best_prediction_jac = np.copy(np.squeeze(output.detach().cpu().numpy()))
-                best_f1 = f1_score
+                best_jac = jac_idx
             if jac_idx < worst_jac:
                 worst_prediction_jac = np.copy(np.squeeze(output.detach().cpu().numpy()))
-                worst_f1 = f1_score
+                worst_jac = jac_idx
 
             test_loss += loss
             test_f1 += f1_score
@@ -82,7 +82,7 @@ def test(model, loss_fn, test_loader, device):
     print_prediction(best_prediction_jac, worst_prediction_jac, 'jaccard_index', best_jac, worst_jac)
 
     fig_bprc, ax_bprc = bprc.plot(score=True)
-    plt.savefig(os.path.join(save_path, 'model_{}_precision_recall_curve.png'.format(model_version)))
+    plt.savefig(os.path.join(save_path, 'model_{}_predictions_pr_curve.png'.format(model_version)))
 
     log_and_print("{} testing complete.".format(datetime.now()))
 
