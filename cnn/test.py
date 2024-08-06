@@ -35,10 +35,10 @@ def print_hist(metric_vals, metric_name):
     plt.savefig(os.path.join(save_path, 'model_{}_test_{}.png'.format(model_version, metric_name)))
 
 
-def test(model, loss_fn, test_loader, device):
+def test(model, test_loader, device):
     global model_version, save_path
+    f1_scores, jac_idxs = [], []
     bprc = BinaryPrecisionRecallCurve()
-    losses, f1_scores, jac_idxs = [], [], []
     model.eval()
     log_and_print("{} starting testing...".format(datetime.now()))
 
@@ -48,7 +48,6 @@ def test(model, loss_fn, test_loader, device):
             image = image.to(device=device)
             target = target.to(device=device)
             output = model(image)
-            losses.append(loss_fn(output, target).item())
             f1_scores.append(binary_f1_score(output, target, threshold=0.5).item())
             jac_idxs.append(binary_jaccard_index(output, target, threshold=0.5).item())
             bprc.update(output, target.long())
@@ -56,10 +55,9 @@ def test(model, loss_fn, test_loader, device):
 
     # --- print epoch results --- #
     log_and_print("{} testing metrics:".format(datetime.now()))
-    log_and_print("avg_loss:\t{:.9f}".format(np.mean(losses)))
-    log_and_print("f1_score:\t{:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(
+    log_and_print("\tf1_score:\t{:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(
         np.max(f1_scores), np.min(f1_scores), np.mean(f1_scores)))
-    log_and_print("jaccard_idx:\t{:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(
+    log_and_print("\tjaccard_idx:\t{:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(
         np.max(jac_idxs), np.min(jac_idxs), np.mean(jac_idxs)))
 
     # --- save example outputs --- #
@@ -74,7 +72,6 @@ if __name__ == '__main__':
     # hyperparameters
     model_version = 3
     resize_shape = (512, 512)
-    loss_fn_name = 'binary_cross_entropy'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     list_path, save_path = get_os_dependent_paths(model_version, partition='test')
     weights_file = os.path.join(save_path, "model_{}_weights.pth".format(model_version))
@@ -84,7 +81,7 @@ if __name__ == '__main__':
 
     # print training hyperparameters
     print_hyperparams(
-        model_ver=model_version, resize_shape=resize_shape, loss_fn_name=loss_fn_name, device=device
+        model_ver=model_version, resize_shape=resize_shape, device=device
     )
 
     # set up dataset(s)
@@ -97,8 +94,5 @@ if __name__ == '__main__':
     model.load_state_dict(torch.load(weights_file, map_location=device, weights_only=True))
     model.to(device=device)
 
-    # init model training parameters
-    loss_fn = torch.nn.BCELoss()
-
     # test model
-    test(model, loss_fn, test_loader, device)
+    test(model, test_loader, device)
