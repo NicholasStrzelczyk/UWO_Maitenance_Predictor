@@ -67,7 +67,7 @@ def test(model, loss_fn, test_loader, device):
             test_f1 += f1_score
             test_jac += jac_idx
 
-            bprc.update(output, target)
+            bprc.update(output, target.long())
 
             del image, target, output
 
