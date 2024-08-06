@@ -16,14 +16,14 @@ from custom_ds import CustomDS
 from unet_model import UNet
 
 
-def print_prediction(best_pred, worst_pred, metric_name, metric_value_best, metric_value_worst):
+def print_prediction(best_pred, ground_truth, metric_name, metric_value_best):
     global model_version, save_path
     f, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 10))
     axs[0].imshow(best_pred, cmap='gray')
-    axs[0].set_title('Best {}={:.4f}'.format(metric_name, metric_value_best))
-    axs[1].imshow(worst_pred, cmap='gray')
-    axs[1].set_title('Worst {}={:.4f}'.format(metric_name, metric_value_worst))
-    plt.suptitle('Model_{} Predictions ({})'.format(model_version, metric_name), fontsize=16, fontweight='bold')
+    axs[0].set_title('Prediction')
+    axs[1].imshow(ground_truth, cmap='gray')
+    axs[1].set_title('Ground Truth')
+    plt.suptitle('Best Prediction ({}={})'.format(metric_name, metric_value_best), fontsize=16, fontweight='bold')
     plt.savefig(os.path.join(save_path, 'model_{}_predictions_{}.png'.format(model_version, metric_name)))
 
 
@@ -51,16 +51,16 @@ def test(model, loss_fn, test_loader, device):
 
             if f1_score > best_f1:
                 best_prediction_f1 = np.copy(np.squeeze(output.detach().cpu().numpy()))
+                best_prediction_f1_gt = np.copy(np.squeeze(target.detach().cpu().numpy()))
                 best_f1 = f1_score
             if f1_score < worst_f1:
-                worst_prediction_f1 = np.copy(np.squeeze(output.detach().cpu().numpy()))
                 worst_f1 = f1_score
 
             if jac_idx > best_jac:
                 best_prediction_jac = np.copy(np.squeeze(output.detach().cpu().numpy()))
+                best_prediction_jac_gt = np.copy(np.squeeze(target.detach().cpu().numpy()))
                 best_jac = jac_idx
             if jac_idx < worst_jac:
-                worst_prediction_jac = np.copy(np.squeeze(output.detach().cpu().numpy()))
                 worst_jac = jac_idx
 
             test_loss += loss
@@ -75,11 +75,13 @@ def test(model, loss_fn, test_loader, device):
     log_and_print("{} testing metrics:".format(datetime.now()))
     log_and_print("\tloss: {:.9f}, f1_score: {:.9f}, jaccard_idx: {:.9f}".format(
         test_loss / len(test_loader), test_f1 / len(test_loader), test_jac / len(test_loader)))
+    log_and_print("\tbest f1 score: {}, worst f1 score: {}".format(best_f1, worst_f1))
+    log_and_print("\tbest jaccard index: {}, worst jaccard index: {}".format(best_jac, worst_jac))
 
     # --- save example outputs --- #
     log_and_print("{} generating prediction samples...".format(datetime.now()))
-    print_prediction(best_prediction_f1, worst_prediction_f1, 'f1_score', best_f1, worst_f1)
-    print_prediction(best_prediction_jac, worst_prediction_jac, 'jaccard_index', best_jac, worst_jac)
+    print_prediction(best_prediction_f1, best_prediction_f1_gt, 'f1_score', best_f1)
+    print_prediction(best_prediction_jac, best_prediction_jac_gt, 'jaccard_index', best_jac)
 
     fig_bprc, ax_bprc = bprc.plot(score=True)
     plt.savefig(os.path.join(save_path, 'model_{}_predictions_pr_curve.png'.format(model_version)))
