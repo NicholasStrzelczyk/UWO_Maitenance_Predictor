@@ -15,11 +15,18 @@ from custom_ds import CustomDS
 from unet_model import UNet
 
 
+def plot_metric(metric, metric_name):
+    global model_version, save_path
+    plt.clf()
+    metric.plot(score=True)
+    plt.savefig(os.path.join(save_path, 'model_{}_test_{}.png'.format(model_version, metric_name)))
+
+
 def print_hist(metric_vals, metric_name):
     global model_version, save_path
     plt.clf()
     plt.figure(figsize=(8, 6))
-    values, bins, bars = plt.hist(metric_vals, range=(0.0, 1.0), edgecolor='white')
+    values, bins, bars = plt.hist(metric_vals, edgecolor='white')
     plt.xlabel(metric_name)
     plt.ylabel('number of predictions')
     plt.bar_label(bars)
@@ -48,6 +55,7 @@ def test(model, loss_fn, test_loader, device):
             loss = loss_fn(output, target).item()
             f1_score = binary_f1_score(output, target, threshold=0.5).item()
             jac_idx = binary_jaccard_index(output, target, threshold=0.5).item()
+            bprc.update(output, target.long())
 
             if f1_score > best_f1:
                 best_f1 = f1_score
@@ -62,15 +70,13 @@ def test(model, loss_fn, test_loader, device):
             test_loss += loss
             test_f1 += f1_score
             test_jac += jac_idx
-
-            bprc.update(output, target.long())
-
             del image, target, output
+
+    avg_f1 = test_f1 / len(test_loader)
+    avg_jac = test_jac / len(test_loader)
 
     # --- print epoch results --- #
     log_and_print("{} testing metrics:".format(datetime.now()))
-    avg_f1 = test_f1 / len(test_loader)
-    avg_jac = test_jac / len(test_loader)
     log_and_print("\tloss: {:.9f} (avg)".format(test_loss / len(test_loader)))
     log_and_print("\tf1_score: {:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(best_f1, worst_f1, avg_f1))
     log_and_print("\tjaccard_idx: {:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(best_jac, worst_jac, avg_jac))
@@ -79,8 +85,7 @@ def test(model, loss_fn, test_loader, device):
     log_and_print("{} generating prediction samples...".format(datetime.now()))
     print_hist(test_f1, 'f1_score')
     print_hist(test_jac, 'jaccard_index')
-    fig_bprc, ax_bprc = bprc.plot(score=True)
-    plt.savefig(os.path.join(save_path, 'model_{}_predictions_pr_curve.png'.format(model_version)))
+    plot_metric(bprc, 'prc')
     log_and_print("{} testing complete.".format(datetime.now()))
 
 
@@ -108,7 +113,7 @@ if __name__ == '__main__':
 
     # compile model
     model = UNet()
-    model.load_state_dict(torch.load(weights_file, map_location=device))
+    model.load_state_dict(torch.load(weights_file, map_location=device, weights_only=True))
     model.to(device=device)
 
     # init model training parameters
