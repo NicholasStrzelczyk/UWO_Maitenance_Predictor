@@ -16,21 +16,21 @@ from custom_ds import CustomDS
 from unet_model import UNet
 
 
-def print_prediction(best_pred, ground_truth, metric_name, metric_value_best):
+def print_prediction(best_pred, ground_truth, im_name, metric_name, metric_value_best):
     global model_version, save_path
     f, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 10))
     axs[0].imshow(best_pred, cmap='gray')
-    axs[0].set_title('Prediction')
+    axs[0].set_title('Prediction for {}'.format(im_name))
     axs[1].imshow(ground_truth, cmap='gray')
-    axs[1].set_title('Ground Truth')
-    plt.suptitle('Best Prediction ({}={})'.format(metric_name, metric_value_best), fontsize=16, fontweight='bold')
+    axs[1].set_title('Ground Truth for {}'.format(im_name))
+    plt.suptitle('Best {} Prediction ({})'.format(metric_name, metric_value_best), fontsize=16, fontweight='bold')
     plt.savefig(os.path.join(save_path, 'model_{}_predictions_{}.png'.format(model_version, metric_name)))
 
 
 def test(model, loss_fn, test_loader, device):
     global model_version, save_path
 
-    bprc = BinaryPrecisionRecallCurve(thresholds=[0.5])
+    bprc = BinaryPrecisionRecallCurve()
 
     test_loss, test_f1, test_jac = 0.0, 0.0, 0.0
     best_f1, worst_f1 = 0.0, 1.0
@@ -41,7 +41,7 @@ def test(model, loss_fn, test_loader, device):
 
     # --- validation step --- #
     with torch.no_grad():
-        for image, target in tqdm(test_loader, desc="test progress"):
+        for image, target, name in tqdm(test_loader, desc="test progress"):
             image = image.to(device=device)
             target = target.to(device=device)
             output = model(image)
@@ -50,15 +50,17 @@ def test(model, loss_fn, test_loader, device):
             jac_idx = binary_jaccard_index(output, target, threshold=0.5).item()
 
             if f1_score > best_f1:
-                best_prediction_f1 = np.copy(np.squeeze(output.detach().cpu().numpy()))
-                best_prediction_f1_gt = np.copy(np.squeeze(target.detach().cpu().numpy()))
+                best_pred_f1 = np.copy(np.squeeze(output.detach().cpu().numpy()))
+                best_pred_f1_gt = np.copy(np.squeeze(target.detach().cpu().numpy()))
+                best_pred_f1_name = name.detach().cpu()
                 best_f1 = f1_score
             if f1_score < worst_f1:
                 worst_f1 = f1_score
 
             if jac_idx > best_jac:
-                best_prediction_jac = np.copy(np.squeeze(output.detach().cpu().numpy()))
-                best_prediction_jac_gt = np.copy(np.squeeze(target.detach().cpu().numpy()))
+                best_pred_jac = np.copy(np.squeeze(output.detach().cpu().numpy()))
+                best_pred_jac_gt = np.copy(np.squeeze(target.detach().cpu().numpy()))
+                best_pred_jac_name = name.detach().cpu()
                 best_jac = jac_idx
             if jac_idx < worst_jac:
                 worst_jac = jac_idx
@@ -80,8 +82,8 @@ def test(model, loss_fn, test_loader, device):
 
     # --- save example outputs --- #
     log_and_print("{} generating prediction samples...".format(datetime.now()))
-    print_prediction(best_prediction_f1, best_prediction_f1_gt, 'f1_score', best_f1)
-    print_prediction(best_prediction_jac, best_prediction_jac_gt, 'jaccard_index', best_jac)
+    print_prediction(best_pred_f1, best_pred_f1_gt, best_pred_f1_name, 'f1_score', best_f1)
+    print_prediction(best_pred_jac, best_pred_jac_gt, best_pred_jac_name, 'jaccard_index', best_jac)
 
     fig_bprc, ax_bprc = bprc.plot(score=True)
     plt.savefig(os.path.join(save_path, 'model_{}_predictions_pr_curve.png'.format(model_version)))
