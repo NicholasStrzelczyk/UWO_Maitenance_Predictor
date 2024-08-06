@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 
+import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
@@ -36,13 +37,8 @@ def print_hist(metric_vals, metric_name):
 
 def test(model, loss_fn, test_loader, device):
     global model_version, save_path
-
     bprc = BinaryPrecisionRecallCurve()
-
-    test_loss, test_f1, test_jac = 0.0, 0.0, 0.0
-    best_f1, worst_f1 = 0.0, 1.0
-    best_jac, worst_jac = 0.0, 1.0
-
+    losses, f1_scores, jac_idxs = [], [], []
     model.eval()
     log_and_print("{} starting testing...".format(datetime.now()))
 
@@ -52,39 +48,24 @@ def test(model, loss_fn, test_loader, device):
             image = image.to(device=device)
             target = target.to(device=device)
             output = model(image)
-            loss = loss_fn(output, target).item()
-            f1_score = binary_f1_score(output, target, threshold=0.5).item()
-            jac_idx = binary_jaccard_index(output, target, threshold=0.5).item()
+            losses.append(loss_fn(output, target).item())
+            f1_scores.append(binary_f1_score(output, target, threshold=0.5).item())
+            jac_idxs.append(binary_jaccard_index(output, target, threshold=0.5).item())
             bprc.update(output, target.long())
-
-            if f1_score > best_f1:
-                best_f1 = f1_score
-            if f1_score < worst_f1:
-                worst_f1 = f1_score
-
-            if jac_idx > best_jac:
-                best_jac = jac_idx
-            if jac_idx < worst_jac:
-                worst_jac = jac_idx
-
-            test_loss += loss
-            test_f1 += f1_score
-            test_jac += jac_idx
             del image, target, output
-
-    avg_f1 = test_f1 / len(test_loader)
-    avg_jac = test_jac / len(test_loader)
 
     # --- print epoch results --- #
     log_and_print("{} testing metrics:".format(datetime.now()))
-    log_and_print("\tloss: {:.9f} (avg)".format(test_loss / len(test_loader)))
-    log_and_print("\tf1_score: {:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(best_f1, worst_f1, avg_f1))
-    log_and_print("\tjaccard_idx: {:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(best_jac, worst_jac, avg_jac))
+    log_and_print("avg_loss:\t{:.9f}".format(np.mean(losses)))
+    log_and_print("f1_score:\t{:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(
+        np.max(f1_scores), np.min(f1_scores), np.mean(f1_scores)))
+    log_and_print("jaccard_idx:\t{:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(
+        np.max(jac_idxs), np.min(jac_idxs), np.mean(jac_idxs)))
 
     # --- save example outputs --- #
     log_and_print("{} generating prediction samples...".format(datetime.now()))
-    print_hist(test_f1, 'f1_score')
-    print_hist(test_jac, 'jaccard_index')
+    print_hist(f1_scores, 'f1_score')
+    print_hist(jac_idxs, 'jaccard_index')
     plot_metric(bprc, 'prc')
     log_and_print("{} testing complete.".format(datetime.now()))
 
