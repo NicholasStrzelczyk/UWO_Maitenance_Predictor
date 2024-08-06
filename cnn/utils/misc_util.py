@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 
 def get_os_dependent_paths(model_ver, partition):
-    assert (partition == 'train' or partition == 'test')
+    assert (partition == 'train' or partition == 'test' or partition == 'validation')
     if sys.platform == 'darwin':  # mac
         data_dir = '/Users/nick_1/Bell_5G_Data/synth_datasets'
         list_path = os.path.join(data_dir, '{}/list_{}.txt'.format(partition, sys.platform))
