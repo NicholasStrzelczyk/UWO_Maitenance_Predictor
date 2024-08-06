@@ -29,7 +29,7 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
         # --- training step --- #
         model.train()
         epoch_loss, epoch_f1, epoch_jac = 0.0, 0.0, 0.0
-        for images, targets, _ in tqdm(train_loader, desc="epoch {} train progress".format(epoch + 1)):
+        for images, targets in tqdm(train_loader, desc="epoch {} train progress".format(epoch + 1)):
             images = images.to(device=device)
             targets = targets.to(device=device)
             outputs = model(images)
@@ -50,7 +50,7 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
         model.eval()
         epoch_loss, epoch_f1, epoch_jac = 0.0, 0.0, 0.0
         with torch.no_grad():
-            for images, targets, _ in tqdm(val_loader, desc="epoch {} val progress".format(epoch + 1)):
+            for images, targets in tqdm(val_loader, desc="epoch {} val progress".format(epoch + 1)):
                 images = images.to(device=device)
                 targets = targets.to(device=device)
                 outputs = model(images)

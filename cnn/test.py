@@ -16,15 +16,16 @@ from custom_ds import CustomDS
 from unet_model import UNet
 
 
-def print_prediction(best_pred, ground_truth, im_name, metric_name, metric_value_best):
+def print_hist(metric_vals, metric_name):
     global model_version, save_path
-    f, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 10))
-    axs[0].imshow(best_pred, cmap='gray')
-    axs[0].set_title('Prediction for {}'.format(im_name))
-    axs[1].imshow(ground_truth, cmap='gray')
-    axs[1].set_title('Ground Truth for {}'.format(im_name))
-    plt.suptitle('Best {} Prediction ({})'.format(metric_name, metric_value_best), fontsize=16, fontweight='bold')
-    plt.savefig(os.path.join(save_path, 'model_{}_predictions_{}.png'.format(model_version, metric_name)))
+    plt.clf()
+    plt.figure(figsize=(8, 6))
+    values, bins, bars = plt.hist(metric_vals, bins=10, edgecolor='white')
+    plt.xlabel(metric_name)
+    plt.ylabel('number of predictions')
+    plt.bar_label(bars)
+    plt.suptitle('Prediction Histogram for {}'.format(metric_name), fontsize=16, fontweight='bold')
+    plt.savefig(os.path.join(save_path, 'model_{}_test_{}.png'.format(model_version, metric_name)))
 
 
 def test(model, loss_fn, test_loader, device):
@@ -41,7 +42,7 @@ def test(model, loss_fn, test_loader, device):
 
     # --- validation step --- #
     with torch.no_grad():
-        for image, target, name in tqdm(test_loader, desc="test progress"):
+        for image, target in tqdm(test_loader, desc="test progress"):
             image = image.to(device=device)
             target = target.to(device=device)
             output = model(image)
@@ -50,17 +51,11 @@ def test(model, loss_fn, test_loader, device):
             jac_idx = binary_jaccard_index(output, target, threshold=0.5).item()
 
             if f1_score > best_f1:
-                best_pred_f1 = np.copy(np.squeeze(output.detach().cpu().numpy()))
-                best_pred_f1_gt = np.copy(np.squeeze(target.detach().cpu().numpy()))
-                best_pred_f1_name = name.detach().cpu()
                 best_f1 = f1_score
             if f1_score < worst_f1:
                 worst_f1 = f1_score
 
             if jac_idx > best_jac:
-                best_pred_jac = np.copy(np.squeeze(output.detach().cpu().numpy()))
-                best_pred_jac_gt = np.copy(np.squeeze(target.detach().cpu().numpy()))
-                best_pred_jac_name = name.detach().cpu()
                 best_jac = jac_idx
             if jac_idx < worst_jac:
                 worst_jac = jac_idx
@@ -75,19 +70,18 @@ def test(model, loss_fn, test_loader, device):
 
     # --- print epoch results --- #
     log_and_print("{} testing metrics:".format(datetime.now()))
-    log_and_print("\tloss: {:.9f}, f1_score: {:.9f}, jaccard_idx: {:.9f}".format(
-        test_loss / len(test_loader), test_f1 / len(test_loader), test_jac / len(test_loader)))
-    log_and_print("\tbest f1 score: {}, worst f1 score: {}".format(best_f1, worst_f1))
-    log_and_print("\tbest jaccard index: {}, worst jaccard index: {}".format(best_jac, worst_jac))
+    avg_f1 = test_f1 / len(test_loader)
+    avg_jac = test_jac / len(test_loader)
+    log_and_print("\tloss: {:.9f} (avg)".format(test_loss / len(test_loader)))
+    log_and_print("\tf1_score: {:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(best_f1, worst_f1, avg_f1))
+    log_and_print("\tjaccard_idx: {:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(best_jac, worst_jac, avg_jac))
 
     # --- save example outputs --- #
     log_and_print("{} generating prediction samples...".format(datetime.now()))
-    print_prediction(best_pred_f1, best_pred_f1_gt, best_pred_f1_name, 'f1_score', best_f1)
-    print_prediction(best_pred_jac, best_pred_jac_gt, best_pred_jac_name, 'jaccard_index', best_jac)
-
+    print_hist(test_f1, 'f1_score')
+    print_hist(test_jac, 'jaccard_index')
     fig_bprc, ax_bprc = bprc.plot(score=True)
     plt.savefig(os.path.join(save_path, 'model_{}_predictions_pr_curve.png'.format(model_version)))
-
     log_and_print("{} testing complete.".format(datetime.now()))
 
 

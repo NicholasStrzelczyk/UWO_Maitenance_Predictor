@@ -36,8 +36,4 @@ class CustomDS(Dataset):
         target[target < 0.5] = 0
         target[target >= 0.5] = 1
 
-        # get image name ex. /scenario_1/images/SYNTH_day_11_12pm.png
-        split_char = '\\' if sys.platform == 'win32' else '/'
-        im_name = os.path.join(self.x[idx].split(split_char)[-3:-1])
-
-        return image, target, im_name
+        return image, target
