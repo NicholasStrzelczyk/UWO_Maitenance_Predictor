@@ -1,7 +1,6 @@
 import os
 from datetime import datetime
 
-import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
@@ -20,7 +19,7 @@ def print_hist(metric_vals, metric_name):
     global model_version, save_path
     plt.clf()
     plt.figure(figsize=(8, 6))
-    values, bins, bars = plt.hist(metric_vals, bins=10, edgecolor='white')
+    values, bins, bars = plt.hist(metric_vals, range=(0.0, 1.0), edgecolor='white')
     plt.xlabel(metric_name)
     plt.ylabel('number of predictions')
     plt.bar_label(bars)
