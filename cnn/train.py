@@ -18,6 +18,9 @@ from unet_model import UNet
 def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epochs, device):
     global model_name, model_version, save_path
 
+    weights_save_path = os.path.join(save_path, 'weights')  # dir for weights files
+    os.makedirs(weights_save_path, exist_ok=True)  # dir for weights files
+
     losses_train, losses_val = [], []
     f1_train, f1_val = [], []
     jaccard_train, jaccard_val = [], []
@@ -72,9 +75,12 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
         log_and_print("\t[valid] loss: {:.9f}, f1_score: {:.9f}, jaccard_idx: {:.9f}".format(
             losses_val[epoch], f1_val[epoch], jaccard_val[epoch]))
 
-    # --- save weights and plot metrics --- #
-    log_and_print("{} saving weights and generating plots...".format(datetime.now()))
-    torch.save(model.state_dict(), os.path.join(save_path, "model_{}_weights.pth".format(model_version)))
+        # --- save weights --- #
+        if (epoch + 1) % 30 == 0:
+            torch.save(model.state_dict(), os.path.join(weights_save_path, "e{}_weights.pth".format(epoch)))
+
+    # --- plot metrics --- #
+    log_and_print("{} generating plots...".format(datetime.now()))
     metrics_history = [
         ("loss", losses_train, losses_val),
         ("f1_score", f1_train, f1_val),
