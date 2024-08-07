@@ -87,7 +87,7 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 if __name__ == '__main__':
     # hyperparameters
     model_name = 'basic_unet'
-    model_version = 3
+    model_version = 2
     n_epochs = 30  # num of epochs
     batch_sz = 8  # batch size
     lr = 0.001  # learning rate for optimizer
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     momentum = 0.9  # momentum for optimizer
     resize_shape = (512, 512)  # same size used in U-Net paper for training
     loss_fn_name = 'binary_cross_entropy'
-    optimizer_name = 'adam'
+    optimizer_name = 'sgd'
     scheduler_name = 'reduce_on_plateau'
     seed = get_random_seed()  # generate random seed
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -127,8 +127,8 @@ if __name__ == '__main__':
 
     # init model training parameters
     loss_fn = torch.nn.BCELoss()
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, weight_decay=wd)
-    # optimizer = torch.optim.SGD(params=model.parameters(), lr=lr, momentum=0.9, weight_decay=wd)
+    # optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, weight_decay=wd)
+    optimizer = torch.optim.SGD(params=model.parameters(), lr=lr, momentum=0.9, weight_decay=wd)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 
     # run torch summary report

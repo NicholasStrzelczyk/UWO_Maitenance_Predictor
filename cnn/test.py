@@ -1,6 +1,8 @@
+import csv
 import os
 from datetime import datetime
 
+import cv2
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
@@ -37,6 +39,8 @@ def print_hist(metric_vals, metric_name):
 
 def test(model, test_loader, device):
     global model_version, save_path
+    pred_count = 1
+    metrics_csv_list = []
     f1_scores, jac_idxs = [], []
     bprc = BinaryPrecisionRecallCurve()
     model.eval()
@@ -48,9 +52,20 @@ def test(model, test_loader, device):
             image = image.to(device=device)
             target = target.to(device=device)
             output = model(image)
-            f1_scores.append(binary_f1_score(output, target, threshold=0.5).item())
-            jac_idxs.append(binary_jaccard_index(output, target, threshold=0.5).item())
+
+            f1 = binary_f1_score(output, target, threshold=0.5).item()
+            jac = binary_jaccard_index(output, target, threshold=0.5).item()
             bprc.update(output, target.long())
+
+            f1_scores.append(f1)
+            jac_idxs.append(jac)
+            metrics_csv_list.append([f1, jac])
+            cv2.imwrite(
+                '/Users/nick_1/Bell_5G_Data/synth_datasets/test/predictions/pred_{}.png'.format(pred_count),
+                output.detach().cpu().numpy().astype(np.uint8)
+            )
+            pred_count += 1
+
             del image, target, output
 
     # --- print epoch results --- #
@@ -60,17 +75,25 @@ def test(model, test_loader, device):
     log_and_print("\tjaccard_idx:\t{:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(
         np.max(jac_idxs), np.min(jac_idxs), np.mean(jac_idxs)))
 
-    # --- save example outputs --- #
-    log_and_print("{} generating prediction samples...".format(datetime.now()))
+    # --- save metric outputs --- #
+    log_and_print("{} generating prediction plots and figures...".format(datetime.now()))
     print_hist(f1_scores, 'f1_score')
     print_hist(jac_idxs, 'jaccard_index')
     plot_metric(bprc, 'prc')
+
+    csv_path = '/Users/nick_1/Bell_5G_Data/synth_datasets/test/predictions.csv'
+    open(csv_path, 'w+').close()  # overwrite/ make new blank file
+    with open(csv_path, 'a', encoding='UTF8', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['f1_score', 'jaccard_index'])
+        writer.writerows(metrics_csv_list)
+
     log_and_print("{} testing complete.".format(datetime.now()))
 
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 3
+    model_version = 2
     resize_shape = (512, 512)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     list_path, save_path = get_os_dependent_paths(model_version, partition='test')
