@@ -92,7 +92,6 @@ if __name__ == '__main__':
     batch_sz = 8  # batch size
     lr = 0.001  # learning rate for optimizer
     wd = 0.00001  # weight decay for optimizer
-    momentum = 0.9  # momentum for optimizer
     resize_shape = (512, 512)  # same size used in U-Net paper for training
     loss_fn_name = 'binary_cross_entropy'
     optimizer_name = 'sgd'
@@ -109,8 +108,8 @@ if __name__ == '__main__':
     # print training hyperparameters
     print_hyperparams(
         model_ver=model_version, model_name=model_name, num_epochs=n_epochs, batch_size=batch_sz, learn_rate=lr,
-        weigh_decay=wd, momentum=momentum, resize_shape=resize_shape, loss_fn_name=loss_fn_name,
-        optimizer_name=optimizer_name, scheduler_name=scheduler_name, seed=seed, device=device
+        weigh_decay=wd, resize_shape=resize_shape, loss_fn_name=loss_fn_name, optimizer_name=optimizer_name,
+        scheduler_name=scheduler_name, seed=seed, device=device
     )
 
     # set up dataset(s)
@@ -128,7 +127,7 @@ if __name__ == '__main__':
     # init model training parameters
     loss_fn = torch.nn.BCELoss()
     # optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, weight_decay=wd)
-    optimizer = torch.optim.SGD(params=model.parameters(), lr=lr, momentum=0.9, weight_decay=wd)
+    optimizer = torch.optim.SGD(params=model.parameters(), lr=lr, weight_decay=wd)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 
     # run torch summary report
