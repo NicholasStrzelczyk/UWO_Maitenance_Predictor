@@ -69,22 +69,22 @@ def test(model, test_loader, device):
             if jac < 0.1:
                 cv2.imwrite(
                     os.path.join(save_path, 'pred_examples', 'jac', 'jac_pred_{}.png'.format(jac_pred_count)),
-                    np.squeeze(output.detach().cpu().numpy()).astype(np.uint8)
+                    np.squeeze(output.detach().cpu().numpy())
                 )
                 cv2.imwrite(
                     os.path.join(save_path, 'pred_examples', 'jac', 'jac_targ_{}.png'.format(jac_pred_count)),
-                    np.squeeze(target.detach().cpu().numpy()).astype(np.uint8)
+                    np.squeeze(target.detach().cpu().numpy())
                 )
                 jac_pred_count += 1
 
             if f1 < 0.1:
                 cv2.imwrite(
-                    os.path.join(save_path, 'pred_examples', 'f1', 'f1_pred_{}.png'.format(jac_pred_count)),
-                    np.squeeze(output.detach().cpu().numpy()).astype(np.uint8)
+                    os.path.join(save_path, 'pred_examples', 'f1', 'f1_pred_{}.png'.format(f1_pred_count)),
+                    np.squeeze(output.detach().cpu().numpy())
                 )
                 cv2.imwrite(
-                    os.path.join(save_path, 'pred_examples', 'f1', 'f1_targ_{}.png'.format(jac_pred_count)),
-                    np.squeeze(target.detach().cpu().numpy()).astype(np.uint8)
+                    os.path.join(save_path, 'pred_examples', 'f1', 'f1_targ_{}.png'.format(f1_pred_count)),
+                    np.squeeze(target.detach().cpu().numpy())
                 )
                 f1_pred_count += 1
 
