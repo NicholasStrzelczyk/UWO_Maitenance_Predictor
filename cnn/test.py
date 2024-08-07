@@ -58,15 +58,15 @@ def test(model, test_loader, device):
             target = target.to(device=device)
             output = model(image)
 
-            f1 = binary_f1_score(output, target, threshold=0.5).item()
-            jac = binary_jaccard_index(output, target, threshold=0.5).item()
+            f1 = binary_f1_score(output, target).item()
+            jac = binary_jaccard_index(output, target).item()
             bprc.update(output, target.long())
 
             f1_scores.append(f1)
             jac_idxs.append(jac)
             metrics_csv_list.append([f1, jac])
 
-            if jac < 0.1:
+            if jac == 0.0:
                 cv2.imwrite(
                     os.path.join(save_path, 'pred_examples', 'jac', 'jac_pred_{}.png'.format(jac_pred_count)),
                     255 * np.squeeze(output.detach().cpu().numpy())
@@ -77,7 +77,7 @@ def test(model, test_loader, device):
                 )
                 jac_pred_count += 1
 
-            if f1 < 0.1:
+            if f1 == 0.0:
                 cv2.imwrite(
                     os.path.join(save_path, 'pred_examples', 'f1', 'f1_pred_{}.png'.format(f1_pred_count)),
                     255 * np.squeeze(output.detach().cpu().numpy())
@@ -115,9 +115,9 @@ def test(model, test_loader, device):
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 3
+    model_version = 2
     resize_shape = (512, 512)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     list_path, save_path = get_os_dependent_paths(model_version, partition='test')
     weights_file = os.path.join(save_path, "model_{}_weights.pth".format(model_version))
 
