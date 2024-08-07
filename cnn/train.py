@@ -94,7 +94,7 @@ if __name__ == '__main__':
     wd = 0.00001  # weight decay for optimizer
     resize_shape = (512, 512)  # same size used in U-Net paper for training
     loss_fn_name = 'binary_cross_entropy'
-    optimizer_name = 'sgd'
+    optimizer_name = 'adam'
     scheduler_name = 'reduce_on_plateau'
     seed = get_random_seed()  # generate random seed
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -126,8 +126,7 @@ if __name__ == '__main__':
 
     # init model training parameters
     loss_fn = torch.nn.BCELoss()
-    # optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, weight_decay=wd)
-    optimizer = torch.optim.SGD(params=model.parameters(), lr=lr, weight_decay=wd)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, weight_decay=wd)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 
     # run torch summary report

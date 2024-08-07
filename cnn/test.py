@@ -39,7 +39,12 @@ def print_hist(metric_vals, metric_name):
 
 def test(model, test_loader, device):
     global model_version, save_path
-    pred_count = 1
+
+    jac_pred_count = 1
+    f1_pred_count = 1
+    os.makedirs(os.path.join(save_path, 'pred_examples', 'jac'), exist_ok=True)
+    os.makedirs(os.path.join(save_path, 'pred_examples', 'f1'), exist_ok=True)
+
     metrics_csv_list = []
     f1_scores, jac_idxs = [], []
     bprc = BinaryPrecisionRecallCurve()
@@ -60,11 +65,20 @@ def test(model, test_loader, device):
             f1_scores.append(f1)
             jac_idxs.append(jac)
             metrics_csv_list.append([f1, jac])
-            cv2.imwrite(
-                '/Users/nick_1/Bell_5G_Data/synth_datasets/test/predictions/pred_{}.png'.format(pred_count),
-                output.detach().cpu().numpy().astype(np.uint8)
-            )
-            pred_count += 1
+
+            if jac < 0.1:
+                cv2.imwrite(
+                    os.path.join(save_path, 'pred_examples', 'jac', 'jac_pred_{}.png'.format(jac_pred_count)),
+                    output.detach().cpu().numpy().astype(np.uint8)
+                )
+                jac_pred_count += 1
+
+            if f1 < 0.1:
+                cv2.imwrite(
+                    os.path.join(save_path, 'pred_examples', 'f1', 'f1_pred_{}.png'.format(jac_pred_count)),
+                    output.detach().cpu().numpy().astype(np.uint8)
+                )
+                f1_pred_count += 1
 
             del image, target, output
 
@@ -81,7 +95,7 @@ def test(model, test_loader, device):
     print_hist(jac_idxs, 'jaccard_index')
     plot_metric(bprc, 'prc')
 
-    csv_path = '/Users/nick_1/Bell_5G_Data/synth_datasets/test/predictions.csv'
+    csv_path = os.path.join(save_path, 'predictions.csv')
     open(csv_path, 'w+').close()  # overwrite/ make new blank file
     with open(csv_path, 'a', encoding='UTF8', newline='') as file:
         writer = csv.writer(file)
@@ -93,7 +107,7 @@ def test(model, test_loader, device):
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 2
+    model_version = 3
     resize_shape = (512, 512)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     list_path, save_path = get_os_dependent_paths(model_version, partition='test')
@@ -103,9 +117,7 @@ if __name__ == '__main__':
     setup_basic_logger(os.path.join(save_path, 'testing.log'))
 
     # print training hyperparameters
-    print_hyperparams(
-        model_ver=model_version, resize_shape=resize_shape, device=device
-    )
+    print_hyperparams(model_ver=model_version, resize_shape=resize_shape, device=device)
 
     # set up dataset(s)
     x_test, y_test, _, _ = get_data_from_list(list_path, split=None)
