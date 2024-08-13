@@ -7,11 +7,11 @@ from torchmetrics.functional.classification import binary_f1_score, binary_jacca
 from torchsummary import summary
 from tqdm import tqdm
 
-from utils.data_import_util import get_data_from_list
-from utils.misc_util import print_metric_plots, get_os_dependent_paths
+from cnn.custom_ds import SmRandSpotsDS
+from cnn.utils.data_import_util import get_data_from_list
+from utils.misc_util import print_metric_plots, get_list_path
 from utils.log_util import log_and_print, setup_basic_logger, print_hyperparams
 from utils.seed_util import get_random_seed, make_deterministic
-from custom_ds import CustomDS
 from unet_model import UNet
 
 
@@ -77,7 +77,7 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 
         # --- save weights --- #
         if (epoch + 1) % 30 == 0:
-            torch.save(model.state_dict(), os.path.join(weights_save_path, "e{}_weights.pth".format(epoch)))
+            torch.save(model.state_dict(), os.path.join(weights_save_path, "e{}_weights.pth".format(epoch + 1)))
 
     # --- plot metrics --- #
     log_and_print("{} generating plots...".format(datetime.now()))
@@ -104,8 +104,10 @@ if __name__ == '__main__':
     scheduler_name = 'reduce_on_plateau'
     seed = get_random_seed()  # generate random seed
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    train_list_path, save_path = get_os_dependent_paths(model_version, partition='train')
-    val_list_path, _ = get_os_dependent_paths(model_version, partition='validation')
+
+    list_path = get_list_path(partition='train', ds_parent_folder='sm_rand_spots')
+    save_path = os.path.join('.', 'model_{}'.format(model_version))
+    os.makedirs(save_path, exist_ok=True)
 
     # set up logger and deterministic seed
     setup_basic_logger(os.path.join(save_path, 'training.log'))  # initialize logger
@@ -119,10 +121,9 @@ if __name__ == '__main__':
     )
 
     # set up dataset(s)
-    x_train, y_train, _, _ = get_data_from_list(train_list_path, split=None, seed=seed)
-    x_val, y_val, _, _ = get_data_from_list(val_list_path, split=None, seed=seed)
-    train_ds = CustomDS(x_train, y_train, resize_shape=resize_shape)
-    val_ds = CustomDS(x_val, y_val, resize_shape=resize_shape)
+    x_train, y_train, x_val, y_val = get_data_from_list(list_path, split=0.2, seed=seed)
+    train_ds = SmRandSpotsDS(x_train, y_train)
+    val_ds = SmRandSpotsDS(x_val, y_val)
     train_loader = DataLoader(train_ds, batch_size=batch_sz, shuffle=False)
     val_loader = DataLoader(val_ds, batch_size=batch_sz, shuffle=False)
 

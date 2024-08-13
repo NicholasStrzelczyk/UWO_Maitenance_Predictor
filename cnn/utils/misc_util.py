@@ -3,6 +3,24 @@ import sys
 
 from matplotlib import pyplot as plt
 
+from cnn.utils.constants import *
+
+
+def fix_path(path):
+    return path.replace('/', '\\') if sys.platform == 'win32' else path
+
+
+def get_list_path(partition, ds_parent_folder):
+    assert (ds_parent_folder in valid_ds_folders)
+    assert (partition == 'train' or partition == 'test' or partition == 'validation')
+    if sys.platform == 'darwin':  # mac
+        result = os.path.join(data_path_mac, ds_parent_folder, partition, 'list.txt')
+    elif sys.platform == 'win32':  # windows
+        result = os.path.join(data_path_win32, ds_parent_folder, partition, 'list.txt')
+    else:  # ubuntu
+        result = os.path.join(data_path_linux, ds_parent_folder, partition, 'list.txt')
+    return result
+
 
 def get_os_dependent_paths(model_ver, partition):
     assert (partition == 'train' or partition == 'test' or partition == 'validation')
