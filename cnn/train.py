@@ -16,10 +16,7 @@ from unet_model import UNet
 
 
 def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epochs, device):
-    global model_name, model_version, save_path
-
-    weights_save_path = os.path.join(save_path, 'weights')  # dir for weights files
-    os.makedirs(weights_save_path, exist_ok=True)  # dir for weights files
+    global model_name, model_version, save_path, weights_save_path
 
     losses_train, losses_val = [], []
     f1_train, f1_val = [], []
@@ -93,11 +90,12 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
 if __name__ == '__main__':
     # hyperparameters
     model_name = 'basic_unet'
-    model_version = 2
+    model_version = 1
     n_epochs = 300  # num of epochs
     batch_sz = 8  # batch size
     lr = 0.001  # learning rate for optimizer
     wd = 0.00001  # weight decay for optimizer
+    pat = 5  # learning rate scheduler patience
     resize_shape = (512, 512)  # same size used in U-Net paper for training
     loss_fn_name = 'binary_cross_entropy'
     optimizer_name = 'adam'
@@ -105,9 +103,11 @@ if __name__ == '__main__':
     seed = get_random_seed()  # generate random seed
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
+    # set up paths and directories
     list_path = get_list_path(partition='train', ds_parent_folder='sm_rand_spots')
     save_path = os.path.join('.', 'model_{}'.format(model_version))
-    os.makedirs(save_path, exist_ok=True)
+    weights_save_path = os.path.join(save_path, 'weights')
+    os.makedirs(weights_save_path, exist_ok=True)
 
     # set up logger and deterministic seed
     setup_basic_logger(os.path.join(save_path, 'training.log'))  # initialize logger
@@ -116,12 +116,12 @@ if __name__ == '__main__':
     # print training hyperparameters
     print_hyperparams(
         model_ver=model_version, model_name=model_name, num_epochs=n_epochs, batch_size=batch_sz, learn_rate=lr,
-        weigh_decay=wd, resize_shape=resize_shape, loss_fn_name=loss_fn_name, optimizer_name=optimizer_name,
-        scheduler_name=scheduler_name, seed=seed, device=device
+        weigh_decay=wd, scheduler_patience=pat, resize_shape=resize_shape, loss_fn_name=loss_fn_name,
+        optimizer_name=optimizer_name, scheduler_name=scheduler_name, seed=seed, device=device
     )
 
     # set up dataset(s)
-    x_train, y_train, x_val, y_val = get_data_from_list(list_path, split=0.2, seed=seed)
+    x_train, y_train, x_val, y_val = get_data_from_list(list_path, split=0.1, seed=seed)
     train_ds = SmRandSpotsDS(x_train, y_train)
     val_ds = SmRandSpotsDS(x_val, y_val)
     train_loader = DataLoader(train_ds, batch_size=batch_sz, shuffle=False)
@@ -134,7 +134,7 @@ if __name__ == '__main__':
     # init model training parameters
     loss_fn = torch.nn.BCELoss()
     optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, weight_decay=wd)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=pat)
 
     # run torch summary report
     summary(model, input_size=(3, resize_shape[0], resize_shape[1]))
