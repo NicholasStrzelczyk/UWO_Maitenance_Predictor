@@ -7,8 +7,8 @@ from torchmetrics.functional.classification import binary_f1_score, binary_jacca
 from torchsummary import summary
 from tqdm import tqdm
 
-from cnn.custom_ds import SmRandSpotsDS
-from cnn.utils.data_import_util import get_data_from_list
+from custom_ds import SmRandSpotsDS
+from utils.data_import_util import get_data_from_list
 from unet_model import UNet
 from utils.log_util import log_and_print, setup_basic_logger, print_hyperparams
 from utils.misc_util import print_metric_plots, get_list_path
@@ -100,7 +100,7 @@ if __name__ == '__main__':
 
     # set up paths and directories
     list_path = get_list_path(partition='train', ds_parent_folder='sm_rand_spots')
-    save_path = os.path.join('.', 'model_{}'.format(model_version))
+    save_path = os.path.join('.', '..', 'model_{}'.format(model_version))
     weights_save_path = os.path.join(save_path, 'weights')
     os.makedirs(weights_save_path, exist_ok=True)
 
