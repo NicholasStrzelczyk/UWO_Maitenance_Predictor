@@ -3,7 +3,7 @@ import sys
 
 from matplotlib import pyplot as plt
 
-from cnn.utils.constants import *
+from constants import *
 
 
 def fix_path(path):
