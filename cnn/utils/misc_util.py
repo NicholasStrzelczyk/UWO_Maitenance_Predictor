@@ -3,7 +3,7 @@ import sys
 
 from matplotlib import pyplot as plt
 
-from constants import *
+from constants import valid_ds_folders, data_path_mac, data_path_win32, data_path_linux
 
 
 def fix_path(path):
