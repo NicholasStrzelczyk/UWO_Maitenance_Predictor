@@ -9,29 +9,19 @@ from utils.constants import *
 from utils.misc_util import fix_path
 
 
-class CustomDS(Dataset):  # UNFINISHED
-    def __init__(self, ds_parent_folder, partition, resize_shape=None):
-        assert (partition == 'train' or partition == 'test' or partition == 'validation')
-
+class CustomDS(Dataset):  # OLD DATASET FULL SIZE
+    def __init__(self, x_set, y_set, resize_shape=None):
         self.resize_shape = resize_shape
-
         if sys.platform == 'darwin':
-            self.root_dir = os.path.join(data_path_mac, ds_parent_folder, partition)
+            root_dir = os.path.join(data_path_mac, 'synth_datasets')
         elif sys.platform == 'win32':
-            self.root_dir = os.path.join(data_path_win32, ds_parent_folder, partition)
+            root_dir = os.path.join(data_path_win32, 'synth_datasets')
         else:
-            self.root_dir = os.path.join(data_path_linux, ds_parent_folder, partition)
-
-        count = 0
+            root_dir = os.path.join(data_path_linux, 'synth_datasets')
         self.x, self.y = [], []
-        for line in open(os.path.join(self.root_dir, 'list.txt'), 'r'):
-            x, y = line.split(' ')
-            self.x.append(os.path.join(self.root_dir, x.strip()))
-            self.y.append(os.path.join(self.root_dir, y.strip()))
-            count += 1
-
-        assert (len(self.x) == len(self.y))
-        assert (len(self.x) == count)
+        for idx in range(len(x_set)):
+            self.x.append(os.path.join(root_dir, fix_path(x_set[idx])))
+            self.y.append(os.path.join(root_dir, fix_path(y_set[idx])))
 
     def __len__(self):
         return len(self.x)
@@ -103,8 +93,7 @@ class RandSpotsDS(Dataset):  # FULL SIZE RANDOM SPOTS w/ RESIZING
 
 
 class SmRandSpotsDS(Dataset):  # PREPROCESSED RANDOM SPOTS (no resizing)
-    def __init__(self, x_set, y_set, partition='train'):
-        assert (partition == 'train' or partition == 'test' or partition == 'validation')
+    def __init__(self, x_set, y_set):
         if sys.platform == 'darwin':
             root_dir = os.path.join(data_path_mac, 'sm_rand_spots')
         elif sys.platform == 'win32':

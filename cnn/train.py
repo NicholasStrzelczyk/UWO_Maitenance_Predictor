@@ -8,10 +8,10 @@ from torchsummary import summary
 from tqdm import tqdm
 
 from custom_ds import SmRandSpotsDS
-from utils.data_import_util import get_data_from_list
+from utils.data_import_util import get_xy_data
 from unet_model import UNet
 from utils.log_util import log_and_print, setup_basic_logger, print_hyperparams
-from utils.misc_util import print_metric_plots, get_list_path
+from utils.misc_util import print_metric_plots
 from utils.seed_util import get_random_seed, make_deterministic
 
 
@@ -93,14 +93,14 @@ if __name__ == '__main__':
     batch_sz = 8  # batch size
     checkpoint_interval = 10  # num of epochs between save checkpoints
     input_shape = (512, 512)  # same size used in U-Net paper for training
+    dataset_name = 'sm_rand_spots'
     loss_fn_name = 'binary_cross_entropy'
     optimizer_name = 'default_adam_w'
     seed = get_random_seed()  # generate random seed
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # set up paths and directories
-    list_path = get_list_path(partition='train', ds_parent_folder='sm_rand_spots')
-    save_path = os.path.join('.', '..', 'model_{}'.format(model_version))
+    save_path = os.path.join('.', 'model_{}'.format(model_version))
     weights_save_path = os.path.join(save_path, 'weights')
     os.makedirs(weights_save_path, exist_ok=True)
 
@@ -111,12 +111,12 @@ if __name__ == '__main__':
     # print training hyperparameters
     print_hyperparams(
         model_ver=model_version, model_name=model_name, num_epochs=n_epochs, batch_size=batch_sz,
-        checkpoint_interval=checkpoint_interval, input_shape=input_shape, loss_fn_name=loss_fn_name,
-        optimizer_name=optimizer_name, seed=seed, device=device
+        checkpoint_interval=checkpoint_interval, input_shape=input_shape, dataset_name=dataset_name,
+        loss_fn_name=loss_fn_name, optimizer_name=optimizer_name, seed=seed, device=device
     )
 
     # set up dataset(s)
-    x_train, y_train, x_val, y_val = get_data_from_list(list_path, split=0.1, seed=seed)
+    x_train, y_train, x_val, y_val = get_xy_data(dataset_name, partition='train', split=0.1, seed=seed)
     train_ds = SmRandSpotsDS(x_train, y_train)
     val_ds = SmRandSpotsDS(x_val, y_val)
     train_loader = DataLoader(train_ds, batch_size=batch_sz, shuffle=False)

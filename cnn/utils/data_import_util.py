@@ -1,3 +1,6 @@
+import os
+import sys
+
 from sklearn.model_selection import train_test_split
 
 
@@ -26,3 +29,22 @@ def get_data_from_list(list_path, split=None, seed=None):
         x1, y1 = data_to_xy(all_data, seperator=" ")
 
     return x1, y1, x2, y2
+
+
+def get_xy_data(ds_parent_folder, partition, split=None, seed=None):
+    assert partition in ['train', 'test', 'validation'] is True, "ERROR: invalid partition '{}'".format(partition)
+
+    if sys.platform == 'darwin':  # mac
+        base_path = '/Users/nick_1/Bell_5G_Data'
+    elif sys.platform == 'win32':  # windows
+        base_path = 'C:\\Users\\NickS\\UWO_Summer_Research\\Bell_5G_Data'
+    else:  # ubuntu
+        base_path = '/mnt/storage_1/bell_5g_datasets'
+
+    list_path = os.path.join(base_path, ds_parent_folder, partition, 'list.txt')
+    assert os.path.isfile(list_path) is True, "ERROR: no dataset list exists at '{}'".format(list_path)
+
+    x1, y1, x2, y2 = get_data_from_list(list_path, split=split, seed=seed)
+
+    return x1, y1, x2, y2
+
