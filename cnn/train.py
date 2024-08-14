@@ -16,7 +16,7 @@ from utils.seed_util import get_random_seed, make_deterministic
 
 
 def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device):
-    global model_name, model_version, save_path, weights_save_path
+    global model_name, model_version, save_path, weights_save_path, checkpoint_interval
 
     losses_train, losses_val = [], []
     f1_train, f1_val = [], []
@@ -71,7 +71,7 @@ def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device)
             losses_val[epoch], f1_val[epoch], jaccard_val[epoch]))
 
         # --- save weights --- #
-        if (epoch + 1) % 10 == 0:
+        if (epoch + 1) % checkpoint_interval == 0:
             torch.save(model.state_dict(), os.path.join(weights_save_path, "e{}_weights.pth".format(epoch + 1)))
 
     # --- plot metrics --- #
@@ -89,8 +89,9 @@ if __name__ == '__main__':
     # hyperparameters
     model_name = 'basic_unet'
     model_version = 1
-    n_epochs = 50  # num of epochs
-    batch_sz = 2  # batch size
+    n_epochs = 100  # num of epochs
+    batch_sz = 8  # batch size
+    checkpoint_interval = 10  # num of epochs between save checkpoints
     input_shape = (512, 512)  # same size used in U-Net paper for training
     loss_fn_name = 'binary_cross_entropy'
     optimizer_name = 'default_adam_w'
@@ -110,8 +111,8 @@ if __name__ == '__main__':
     # print training hyperparameters
     print_hyperparams(
         model_ver=model_version, model_name=model_name, num_epochs=n_epochs, batch_size=batch_sz,
-        input_shape=input_shape, loss_fn_name=loss_fn_name, optimizer_name=optimizer_name,
-        seed=seed, device=device
+        checkpoint_interval=checkpoint_interval, input_shape=input_shape, loss_fn_name=loss_fn_name,
+        optimizer_name=optimizer_name, seed=seed, device=device
     )
 
     # set up dataset(s)
@@ -125,7 +126,7 @@ if __name__ == '__main__':
     model = UNet()
     model.to(device=device)
 
-    # init model training parameters
+    # init model optimization parameters
     loss_fn = torch.nn.BCELoss()
     optimizer = torch.optim.AdamW(params=model.parameters())
 
