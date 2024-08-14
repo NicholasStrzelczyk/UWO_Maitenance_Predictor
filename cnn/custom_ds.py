@@ -5,8 +5,8 @@ import cv2
 import numpy as np
 from torch.utils.data import Dataset
 
-from cnn.utils.constants import *
-from cnn.utils.misc_util import fix_path
+from utils.constants import *
+from utils.misc_util import fix_path
 
 
 class CustomDS(Dataset):  # UNFINISHED
