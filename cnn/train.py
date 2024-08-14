@@ -9,13 +9,13 @@ from tqdm import tqdm
 
 from cnn.custom_ds import SmRandSpotsDS
 from cnn.utils.data_import_util import get_data_from_list
-from utils.misc_util import print_metric_plots, get_list_path
-from utils.log_util import log_and_print, setup_basic_logger, print_hyperparams
-from utils.seed_util import get_random_seed, make_deterministic
 from unet_model import UNet
+from utils.log_util import log_and_print, setup_basic_logger, print_hyperparams
+from utils.misc_util import print_metric_plots, get_list_path
+from utils.seed_util import get_random_seed, make_deterministic
 
 
-def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epochs, device):
+def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device):
     global model_name, model_version, save_path, weights_save_path
 
     losses_train, losses_val = [], []
@@ -59,8 +59,6 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
                 epoch_jac += binary_jaccard_index(outputs, targets).item()
                 del images, targets, outputs
 
-        scheduler.step(epoch_loss)  # using validation loss
-
         losses_val.append(epoch_loss / len(val_loader))
         f1_val.append(epoch_f1 / len(val_loader))
         jaccard_val.append(epoch_jac / len(val_loader))
@@ -73,7 +71,7 @@ def train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epoc
             losses_val[epoch], f1_val[epoch], jaccard_val[epoch]))
 
         # --- save weights --- #
-        if (epoch + 1) % 30 == 0:
+        if (epoch + 1) % 10 == 0:
             torch.save(model.state_dict(), os.path.join(weights_save_path, "e{}_weights.pth".format(epoch + 1)))
 
     # --- plot metrics --- #
@@ -91,15 +89,11 @@ if __name__ == '__main__':
     # hyperparameters
     model_name = 'basic_unet'
     model_version = 1
-    n_epochs = 300  # num of epochs
-    batch_sz = 8  # batch size
-    lr = 0.001  # learning rate for optimizer
-    wd = 0.00001  # weight decay for optimizer
-    pat = 5  # learning rate scheduler patience
-    resize_shape = (512, 512)  # same size used in U-Net paper for training
+    n_epochs = 50  # num of epochs
+    batch_sz = 2  # batch size
+    input_shape = (512, 512)  # same size used in U-Net paper for training
     loss_fn_name = 'binary_cross_entropy'
-    optimizer_name = 'adam'
-    scheduler_name = 'reduce_on_plateau'
+    optimizer_name = 'default_adam_w'
     seed = get_random_seed()  # generate random seed
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -115,9 +109,9 @@ if __name__ == '__main__':
 
     # print training hyperparameters
     print_hyperparams(
-        model_ver=model_version, model_name=model_name, num_epochs=n_epochs, batch_size=batch_sz, learn_rate=lr,
-        weigh_decay=wd, scheduler_patience=pat, resize_shape=resize_shape, loss_fn_name=loss_fn_name,
-        optimizer_name=optimizer_name, scheduler_name=scheduler_name, seed=seed, device=device
+        model_ver=model_version, model_name=model_name, num_epochs=n_epochs, batch_size=batch_sz,
+        input_shape=input_shape, loss_fn_name=loss_fn_name, optimizer_name=optimizer_name,
+        seed=seed, device=device
     )
 
     # set up dataset(s)
@@ -133,11 +127,10 @@ if __name__ == '__main__':
 
     # init model training parameters
     loss_fn = torch.nn.BCELoss()
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, weight_decay=wd)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=pat)
+    optimizer = torch.optim.AdamW(params=model.parameters())
 
     # run torch summary report
-    summary(model, input_size=(3, resize_shape[0], resize_shape[1]))
+    summary(model, input_size=(3, input_shape[0], input_shape[1]))
 
     # train model
-    train(model, loss_fn, optimizer, scheduler, train_loader, val_loader, n_epochs, device)
+    train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device)
