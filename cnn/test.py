@@ -11,8 +11,7 @@ from torchmetrics.classification import BinaryPrecisionRecallCurve
 from torchmetrics.functional.classification import binary_f1_score, binary_jaccard_index
 from tqdm import tqdm
 
-from utils.misc_util import get_os_dependent_paths
-from utils.data_import_util import get_data_from_list
+from utils.data_import_util import get_xy_data
 from utils.log_util import setup_basic_logger, log_and_print, print_hyperparams
 from custom_ds import CustomDS
 from unet_model import UNet
@@ -38,12 +37,10 @@ def print_hist(metric_vals, metric_name):
 
 
 def test(model, test_loader, device):
-    global model_version, save_path
+    global model_version, save_path, jac_ex_save_path, f1_ex_save_path
 
     jac_pred_count = 1
     f1_pred_count = 1
-    os.makedirs(os.path.join(save_path, 'pred_examples', 'jac'), exist_ok=True)
-    os.makedirs(os.path.join(save_path, 'pred_examples', 'f1'), exist_ok=True)
 
     metrics_csv_list = []
     f1_scores, jac_idxs = [], []
@@ -68,22 +65,22 @@ def test(model, test_loader, device):
 
             if jac == 0.0:
                 cv2.imwrite(
-                    os.path.join(save_path, 'pred_examples', 'jac', 'jac_pred_{}.png'.format(jac_pred_count)),
+                    os.path.join(jac_ex_save_path, 'jac_pred_{}.png'.format(jac_pred_count)),
                     255 * np.squeeze(output.detach().cpu().numpy())
                 )
                 cv2.imwrite(
-                    os.path.join(save_path, 'pred_examples', 'jac', 'jac_targ_{}.png'.format(jac_pred_count)),
+                    os.path.join(jac_ex_save_path, 'jac_targ_{}.png'.format(jac_pred_count)),
                     255 * np.squeeze(target.detach().cpu().numpy())
                 )
                 jac_pred_count += 1
 
             if f1 == 0.0:
                 cv2.imwrite(
-                    os.path.join(save_path, 'pred_examples', 'f1', 'f1_pred_{}.png'.format(f1_pred_count)),
+                    os.path.join(f1_ex_save_path, 'f1_pred_{}.png'.format(f1_pred_count)),
                     255 * np.squeeze(output.detach().cpu().numpy())
                 )
                 cv2.imwrite(
-                    os.path.join(save_path, 'pred_examples', 'f1', 'f1_targ_{}.png'.format(f1_pred_count)),
+                    os.path.join(f1_ex_save_path, 'f1_targ_{}.png'.format(f1_pred_count)),
                     255 * np.squeeze(target.detach().cpu().numpy())
                 )
                 f1_pred_count += 1
@@ -115,25 +112,36 @@ def test(model, test_loader, device):
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 2
-    resize_shape = (512, 512)
+    model_version = 1
+    input_shape = (512, 512)
+    dataset_name = 'synth_datasets'
+    weights_filename = 'e50_weights.pth'
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    list_path, save_path = get_os_dependent_paths(model_version, partition='test')
-    weights_file = os.path.join(save_path, "model_{}_weights.pth".format(model_version))
+
+    # set up paths and directories
+    save_path = os.path.join('.', 'model_{}'.format(model_version))
+    jac_ex_save_path = os.path.join(save_path, 'pred_examples', 'jac')
+    f1_ex_save_path = os.path.join(save_path, 'pred_examples', 'f1')
+    os.makedirs(jac_ex_save_path, exist_ok=True)
+    os.makedirs(f1_ex_save_path, exist_ok=True)
 
     # set up logger and deterministic seed
     setup_basic_logger(os.path.join(save_path, 'testing.log'))
 
     # print training hyperparameters
-    print_hyperparams(model_ver=model_version, resize_shape=resize_shape, device=device)
+    print_hyperparams(
+        model_ver=model_version, input_shape=input_shape, dataset_name=dataset_name,
+        weights_filename=weights_filename, device=device
+    )
 
     # set up dataset(s)
-    x_test, y_test, _, _ = get_data_from_list(list_path, split=None)
-    test_ds = CustomDS(x_test, y_test, resize_shape=resize_shape)
+    x_test, y_test, _, _ = get_xy_data(dataset_name, partition='test')
+    test_ds = CustomDS(x_test, y_test, resize_shape=input_shape)
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
 
     # compile model
     model = UNet()
+    weights_file = os.path.join(save_path, 'weights', weights_filename)
     model.load_state_dict(torch.load(weights_file, map_location=device, weights_only=True))
     model.to(device=device)
 
