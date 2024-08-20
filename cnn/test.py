@@ -100,8 +100,10 @@ def test(model, test_loader, device):
         np.max(f1_scores), np.min(f1_scores), np.mean(f1_scores)))
     log_and_print("\tjaccard_idx:\t{:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(
         np.max(jac_idxs), np.min(jac_idxs), np.mean(jac_idxs)))
-    log_and_print("\tavg fouling percentage when f1_score is zero:\t{:.9f}%".format(
-        np.mean(fouling_percentages_for_zero_f1)))
+
+    if len(fouling_percentages_for_zero_f1) > 0:
+        log_and_print("\tavg fouling percentage when f1_score is zero:\t{:.9f}%".format(
+            np.mean(fouling_percentages_for_zero_f1)))
 
     # --- save metric outputs --- #
     log_and_print("{} generating prediction plots and figures...".format(datetime.now()))
