@@ -37,16 +37,12 @@ def print_hist(metric_vals, metric_name):
 
 
 def test(model, test_loader, device):
-    global model_version, save_path, jac_ex_save_path, f1_ex_save_path
+    global model_version, save_path, pred_ex_save_path
 
-    jac_pred_count = 1
-    f1_pred_count = 1
-
-    fouling_percentages_for_zero_f1 = []
-
+    pred_count = 1
     metrics_csv_list = []
     f1_scores, jac_idxs = [], []
-    bprc = BinaryPrecisionRecallCurve()
+    bprc = BinaryPrecisionRecallCurve(thresholds=100).to(device)
     model.eval()
     log_and_print("{} starting testing...".format(datetime.now()))
 
@@ -63,47 +59,27 @@ def test(model, test_loader, device):
 
             f1_scores.append(f1)
             jac_idxs.append(jac)
-            metrics_csv_list.append([f1, jac])
 
-            if jac == 0.0:
+            if f1 <= 0.5 or jac <= 0.5:
                 cv2.imwrite(
-                    os.path.join(jac_ex_save_path, 'jac_pred_{}.png'.format(jac_pred_count)),
+                    os.path.join(pred_ex_save_path, 'preds', 'pred_{}.png'.format(pred_count)),
                     255 * np.squeeze(output.detach().cpu().numpy())
                 )
                 cv2.imwrite(
-                    os.path.join(jac_ex_save_path, 'jac_targ_{}.png'.format(jac_pred_count)),
+                    os.path.join(pred_ex_save_path, 'targs', 'targ_{}.png'.format(pred_count)),
                     255 * np.squeeze(target.detach().cpu().numpy())
                 )
-                jac_pred_count += 1
-
-            if f1 == 0.0:
-                cv2.imwrite(
-                    os.path.join(f1_ex_save_path, 'f1_pred_{}.png'.format(f1_pred_count)),
-                    255 * np.squeeze(output.detach().cpu().numpy())
-                )
-                cv2.imwrite(
-                    os.path.join(f1_ex_save_path, 'f1_targ_{}.png'.format(f1_pred_count)),
-                    255 * np.squeeze(target.detach().cpu().numpy())
-                )
-
-                dust_count = np.count_nonzero(np.squeeze(target.detach().cpu().numpy() > 0))
-                percentage = 100 * (dust_count / (512 * 512))
-                fouling_percentages_for_zero_f1.append(percentage)
-
-                f1_pred_count += 1
+                metrics_csv_list.append([pred_count, f1, jac])
+                pred_count += 1
 
             del image, target, output
 
     # --- print epoch results --- #
     log_and_print("{} testing metrics:".format(datetime.now()))
-    log_and_print("\tf1_score:\t{:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(
+    log_and_print("\tf1_score:\t{:.9f} (best) | {:.9f} (worst) | {:.9f} (avg)".format(
         np.max(f1_scores), np.min(f1_scores), np.mean(f1_scores)))
-    log_and_print("\tjaccard_idx:\t{:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(
+    log_and_print("\tjaccard_idx:\t{:.9f} (best) | {:.9f} (worst) | {:.9f} (avg)".format(
         np.max(jac_idxs), np.min(jac_idxs), np.mean(jac_idxs)))
-
-    if len(fouling_percentages_for_zero_f1) > 0:
-        log_and_print("\tavg fouling percentage when f1_score is zero:\t{:.9f}%".format(
-            np.mean(fouling_percentages_for_zero_f1)))
 
     # --- save metric outputs --- #
     log_and_print("{} generating prediction plots and figures...".format(datetime.now()))
@@ -111,11 +87,11 @@ def test(model, test_loader, device):
     print_hist(jac_idxs, 'jaccard_index')
     plot_metric(bprc, 'prc')
 
-    csv_path = os.path.join(save_path, 'predictions.csv')
+    csv_path = os.path.join(pred_ex_save_path, 'prediction_scores.csv')
     open(csv_path, 'w+').close()  # overwrite/ make new blank file
     with open(csv_path, 'a', encoding='UTF8', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['f1_score', 'jaccard_index'])
+        writer.writerow(['pred_num', 'f1_score', 'jaccard_index'])
         writer.writerows(metrics_csv_list)
 
     log_and_print("{} testing complete.".format(datetime.now()))
@@ -131,10 +107,9 @@ if __name__ == '__main__':
 
     # set up paths and directories
     save_path = os.path.join('.', 'model_{}'.format(model_version))
-    jac_ex_save_path = os.path.join(save_path, 'pred_examples', 'jac')
-    f1_ex_save_path = os.path.join(save_path, 'pred_examples', 'f1')
-    os.makedirs(jac_ex_save_path, exist_ok=True)
-    os.makedirs(f1_ex_save_path, exist_ok=True)
+    pred_ex_save_path = os.path.join(save_path, 'pred_examples')
+    os.makedirs(os.path.join(pred_ex_save_path, 'preds'), exist_ok=True)
+    os.makedirs(os.path.join(pred_ex_save_path, 'targs'), exist_ok=True)
 
     # set up logger and deterministic seed
     setup_basic_logger(os.path.join(save_path, 'testing.log'))
