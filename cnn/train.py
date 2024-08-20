@@ -18,6 +18,9 @@ from utils.seed_util import get_random_seed, make_deterministic
 def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device):
     global model_name, model_version, save_path, weights_save_path, checkpoint_interval
 
+    best_epoch = 0
+    best_avg_score = 0.0
+
     losses_train, losses_val = [], []
     f1_train, f1_val = [], []
     jaccard_train, jaccard_val = [], []
@@ -63,12 +66,18 @@ def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device)
         f1_val.append(epoch_f1 / len(val_loader))
         jaccard_val.append(epoch_jac / len(val_loader))
 
+        avg_metric_score = (f1_train[epoch] + jaccard_train[epoch]) / 2
+        if avg_metric_score > best_avg_score:
+            best_epoch = epoch
+            best_avg_score = avg_metric_score
+
         # --- print epoch results --- #
         log_and_print("{} epoch {}/{} metrics:".format(datetime.now(), epoch + 1, n_epochs))
         log_and_print("\t[train] loss: {:.9f}, f1_score: {:.9f}, jaccard_idx: {:.9f}".format(
             losses_train[epoch], f1_train[epoch], jaccard_train[epoch]))
         log_and_print("\t[valid] loss: {:.9f}, f1_score: {:.9f}, jaccard_idx: {:.9f}".format(
             losses_val[epoch], f1_val[epoch], jaccard_val[epoch]))
+        log_and_print("\tbest epoch: {}".format(best_epoch))
 
         # --- save weights --- #
         if (epoch + 1) % checkpoint_interval == 0:
