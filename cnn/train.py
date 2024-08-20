@@ -16,7 +16,7 @@ from utils.seed_util import get_random_seed, make_deterministic
 
 
 def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device):
-    global model_name, model_version, save_path, weights_save_path, checkpoint_interval
+    global model_name, model_version, save_path
 
     best_epoch = 0
     best_avg_score = 0.0
@@ -66,10 +66,12 @@ def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device)
         f1_val.append(epoch_f1 / len(val_loader))
         jaccard_val.append(epoch_jac / len(val_loader))
 
-        avg_metric_score = (f1_train[epoch] + jaccard_train[epoch]) / 2
-        if avg_metric_score > best_avg_score:
-            best_epoch = epoch
+        # --- determine if best epoch --- #
+        avg_metric_score = (f1_val[epoch] + jaccard_val[epoch]) / 2
+        if avg_metric_score >= best_avg_score:
+            best_epoch = epoch + 1
             best_avg_score = avg_metric_score
+            torch.save(model.state_dict(), os.path.join(save_path, "best_weights.pth"))
 
         # --- print epoch results --- #
         log_and_print("{} epoch {}/{} metrics:".format(datetime.now(), epoch + 1, n_epochs))
@@ -77,13 +79,10 @@ def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device)
             losses_train[epoch], f1_train[epoch], jaccard_train[epoch]))
         log_and_print("\t[valid] loss: {:.9f}, f1_score: {:.9f}, jaccard_idx: {:.9f}".format(
             losses_val[epoch], f1_val[epoch], jaccard_val[epoch]))
-        log_and_print("\tbest epoch: {}".format(best_epoch))
 
-        # --- save weights --- #
-        if (epoch + 1) % checkpoint_interval == 0:
-            torch.save(model.state_dict(), os.path.join(weights_save_path, "e{}_weights.pth".format(epoch + 1)))
-
-    # --- plot metrics --- #
+    # --- print and plot metrics --- #
+    log_and_print("{} training complete.".format(datetime.now()))
+    log_and_print("best avg val score: {:.9f}, occurred on epoch {}".format(best_avg_score, best_epoch))
     log_and_print("{} generating plots...".format(datetime.now()))
     metrics_history = [
         ("loss", losses_train, losses_val),
@@ -91,16 +90,15 @@ def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device)
         ("jaccard_index", jaccard_train, jaccard_val),
     ]
     print_metric_plots(metrics_history, model_version, save_path)
-    log_and_print("{} training complete.".format(datetime.now()))
+    log_and_print("{} script finished.".format(datetime.now()))
 
 
 if __name__ == '__main__':
     # hyperparameters
     model_name = 'basic_unet'
     model_version = 3
-    n_epochs = 100  # num of epochs
+    n_epochs = 150  # num of epochs
     batch_sz = 8  # batch size
-    checkpoint_interval = 10  # num of epochs between save checkpoints
     input_shape = (512, 512)  # same size used in U-Net paper for training
     dataset_name = 'sm_rand_spots'
     loss_fn_name = 'binary_cross_entropy'
@@ -110,8 +108,6 @@ if __name__ == '__main__':
 
     # set up paths and directories
     save_path = os.path.join('.', 'model_{}'.format(model_version))
-    weights_save_path = os.path.join(save_path, 'weights')
-    os.makedirs(weights_save_path, exist_ok=True)
 
     # set up logger and deterministic seed
     setup_basic_logger(os.path.join(save_path, 'training.log'))  # initialize logger
@@ -120,8 +116,8 @@ if __name__ == '__main__':
     # print training hyperparameters
     print_hyperparams(
         model_ver=model_version, model_name=model_name, num_epochs=n_epochs, batch_size=batch_sz,
-        checkpoint_interval=checkpoint_interval, input_shape=input_shape, dataset_name=dataset_name,
-        loss_fn_name=loss_fn_name, optimizer_name=optimizer_name, seed=seed, device=device
+        input_shape=input_shape, dataset_name=dataset_name, loss_fn_name=loss_fn_name,
+        optimizer_name=optimizer_name, seed=seed, device=device
     )
 
     # set up dataset(s)

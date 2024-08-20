@@ -42,7 +42,7 @@ def test(model, test_loader, device):
     pred_count = 1
     metrics_csv_list = []
     f1_scores, jac_idxs = [], []
-    bprc = BinaryPrecisionRecallCurve(thresholds=100).to(device)
+    bprc = BinaryPrecisionRecallCurve(thresholds=int(len(test_loader) / 2)).to(device)
     model.eval()
     log_and_print("{} starting testing...".format(datetime.now()))
 
@@ -99,10 +99,9 @@ def test(model, test_loader, device):
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 1
+    model_version = 3
     input_shape = (512, 512)
     dataset_name = 'sm_rand_spots'
-    weights_filename = 'e80_weights.pth'
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # set up paths and directories
@@ -116,8 +115,7 @@ if __name__ == '__main__':
 
     # print training hyperparameters
     print_hyperparams(
-        model_ver=model_version, input_shape=input_shape, dataset_name=dataset_name,
-        weights_filename=weights_filename, device=device
+        model_ver=model_version, input_shape=input_shape, dataset_name=dataset_name, device=device
     )
 
     # set up dataset(s)
@@ -127,7 +125,7 @@ if __name__ == '__main__':
 
     # compile model
     model = UNet()
-    weights_file = os.path.join(save_path, 'weights', weights_filename)
+    weights_file = os.path.join(save_path, 'best_weights.pth')
     model.load_state_dict(torch.load(weights_file, map_location=device, weights_only=True))
     model.to(device=device)
 
