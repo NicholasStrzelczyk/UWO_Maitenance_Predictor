@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from utils.data_import_util import get_xy_data
 from utils.log_util import setup_basic_logger, log_and_print, print_hyperparams
-from custom_ds import CustomDS
+from custom_ds import SmRandSpotsDS
 from unet_model import UNet
 
 
@@ -41,6 +41,8 @@ def test(model, test_loader, device):
 
     jac_pred_count = 1
     f1_pred_count = 1
+
+    fouling_percentages_for_zero_f1 = []
 
     metrics_csv_list = []
     f1_scores, jac_idxs = [], []
@@ -83,6 +85,11 @@ def test(model, test_loader, device):
                     os.path.join(f1_ex_save_path, 'f1_targ_{}.png'.format(f1_pred_count)),
                     255 * np.squeeze(target.detach().cpu().numpy())
                 )
+
+                dust_count = np.count_nonzero(np.squeeze(target.detach().cpu().numpy() > 0))
+                percentage = 100 * (dust_count / (512 * 512))
+                fouling_percentages_for_zero_f1.append(percentage)
+
                 f1_pred_count += 1
 
             del image, target, output
@@ -93,6 +100,8 @@ def test(model, test_loader, device):
         np.max(f1_scores), np.min(f1_scores), np.mean(f1_scores)))
     log_and_print("\tjaccard_idx:\t{:.9f} (best), {:.9f} (worst), {:.9f} (avg)".format(
         np.max(jac_idxs), np.min(jac_idxs), np.mean(jac_idxs)))
+    log_and_print("\tavg fouling percentage when f1_score is zero:\t{:.9f}%".format(
+        np.mean(fouling_percentages_for_zero_f1)))
 
     # --- save metric outputs --- #
     log_and_print("{} generating prediction plots and figures...".format(datetime.now()))
@@ -114,7 +123,7 @@ if __name__ == '__main__':
     # hyperparameters
     model_version = 1
     input_shape = (512, 512)
-    dataset_name = 'synth_datasets'
+    dataset_name = 'sm_rand_spots'
     weights_filename = 'e100_weights.pth'
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -136,7 +145,7 @@ if __name__ == '__main__':
 
     # set up dataset(s)
     x_test, y_test, _, _ = get_xy_data(dataset_name, partition='test')
-    test_ds = CustomDS(x_test, y_test, resize_shape=input_shape)
+    test_ds = SmRandSpotsDS(x_test, y_test)
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
 
     # compile model

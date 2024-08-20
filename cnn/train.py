@@ -88,7 +88,7 @@ def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device)
 if __name__ == '__main__':
     # hyperparameters
     model_name = 'basic_unet'
-    model_version = 1
+    model_version = 3
     n_epochs = 100  # num of epochs
     batch_sz = 8  # batch size
     checkpoint_interval = 10  # num of epochs between save checkpoints
