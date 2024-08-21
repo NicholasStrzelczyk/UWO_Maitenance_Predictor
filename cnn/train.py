@@ -66,7 +66,7 @@ def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device)
         f1_val.append(epoch_f1 / len(val_loader))
         jaccard_val.append(epoch_jac / len(val_loader))
 
-        # --- determine if best epoch --- #
+        # --- save weights for best epoch --- #
         avg_metric_score = (f1_val[epoch] + jaccard_val[epoch]) / 2
         if avg_metric_score >= best_avg_score:
             best_epoch = epoch + 1
@@ -95,15 +95,21 @@ def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device)
 
 if __name__ == '__main__':
     # hyperparameters
-    model_name = 'basic_unet'
-    model_version = 3
-    n_epochs = 150  # num of epochs
+    model_name = 'basic_unet w/ adamW optimizer'
+    # model_name = 'basic_unet w/ adam optimizer'
+    # model_name = 'basic_unet w/ sgd optimizer'
+    model_version = 1
+    n_epochs = 100  # num of epochs
     batch_sz = 8  # batch size
+    # seed = get_random_seed()  # generate random seed
+    seed = 987654321  # manual seed
+    val_split = 0.2  # split for validation dataset
     input_shape = (512, 512)  # same size used in U-Net paper for training
     dataset_name = 'sm_rand_spots'
     loss_fn_name = 'binary_cross_entropy'
     optimizer_name = 'default_adam_w'
-    seed = get_random_seed()  # generate random seed
+    # optimizer_name = 'default_adam'
+    # optimizer_name = 'default_sgd'
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # set up paths and directories
@@ -116,12 +122,12 @@ if __name__ == '__main__':
     # print training hyperparameters
     print_hyperparams(
         model_ver=model_version, model_name=model_name, num_epochs=n_epochs, batch_size=batch_sz,
-        input_shape=input_shape, dataset_name=dataset_name, loss_fn_name=loss_fn_name,
-        optimizer_name=optimizer_name, seed=seed, device=device
+        seed=seed, validation_split=val_split, input_shape=input_shape, dataset_name=dataset_name,
+        loss_fn_name=loss_fn_name, optimizer_name=optimizer_name, device=device
     )
 
     # set up dataset(s)
-    x_train, y_train, x_val, y_val = get_xy_data(dataset_name, partition='train', split=0.1, seed=seed)
+    x_train, y_train, x_val, y_val = get_xy_data(dataset_name, partition='train', split=val_split, seed=seed)
     train_ds = SmRandSpotsDS(x_train, y_train)
     val_ds = SmRandSpotsDS(x_val, y_val)
     train_loader = DataLoader(train_ds, batch_size=batch_sz, shuffle=False)
@@ -134,6 +140,8 @@ if __name__ == '__main__':
     # init model optimization parameters
     loss_fn = torch.nn.BCELoss()
     optimizer = torch.optim.AdamW(params=model.parameters())
+    # optimizer = torch.optim.Adam(params=model.parameters())
+    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-3)
 
     # run torch summary report
     summary(model, input_size=(3, input_shape[0], input_shape[1]))
