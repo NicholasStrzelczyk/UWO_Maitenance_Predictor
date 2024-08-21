@@ -95,10 +95,10 @@ def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device)
 
 if __name__ == '__main__':
     # hyperparameters
-    model_name = 'basic_unet w/ adamW optimizer'
-    # model_name = 'basic_unet w/ adam optimizer'
+    # model_name = 'basic_unet w/ adamW optimizer'
+    model_name = 'basic_unet w/ adam optimizer'
     # model_name = 'basic_unet w/ sgd optimizer'
-    model_version = 1
+    model_version = 2
     n_epochs = 100  # num of epochs
     batch_sz = 8  # batch size
     # seed = get_random_seed()  # generate random seed
@@ -107,8 +107,8 @@ if __name__ == '__main__':
     input_shape = (512, 512)  # same size used in U-Net paper for training
     dataset_name = 'sm_rand_spots'
     loss_fn_name = 'binary_cross_entropy'
-    optimizer_name = 'default_adam_w'
-    # optimizer_name = 'default_adam'
+    # optimizer_name = 'default_adam_w'
+    optimizer_name = 'default_adam'
     # optimizer_name = 'default_sgd'
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -139,8 +139,8 @@ if __name__ == '__main__':
 
     # init model optimization parameters
     loss_fn = torch.nn.BCELoss()
-    optimizer = torch.optim.AdamW(params=model.parameters())
-    # optimizer = torch.optim.Adam(params=model.parameters())
+    # optimizer = torch.optim.AdamW(params=model.parameters())
+    optimizer = torch.optim.Adam(params=model.parameters())
     # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-3)
 
     # run torch summary report
