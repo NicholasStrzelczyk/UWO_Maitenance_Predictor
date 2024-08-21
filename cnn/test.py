@@ -69,6 +69,10 @@ def test(model, test_loader, device):
                     os.path.join(pred_ex_save_path, 'targs', 'targ_{}.png'.format(pred_count)),
                     255 * np.squeeze(target.detach().cpu().numpy())
                 )
+                cv2.imwrite(
+                    os.path.join(pred_ex_save_path, 'inputs', 'input_{}.png'.format(pred_count)),
+                    255 * np.squeeze(image.detach().cpu().numpy())
+                )
                 metrics_csv_list.append([pred_count, f1, jac])
                 pred_count += 1
 
@@ -109,6 +113,7 @@ if __name__ == '__main__':
     pred_ex_save_path = os.path.join(save_path, 'pred_examples')
     os.makedirs(os.path.join(pred_ex_save_path, 'preds'), exist_ok=True)
     os.makedirs(os.path.join(pred_ex_save_path, 'targs'), exist_ok=True)
+    os.makedirs(os.path.join(pred_ex_save_path, 'inputs'), exist_ok=True)
 
     # set up logger and deterministic seed
     setup_basic_logger(os.path.join(save_path, 'testing.log'))
