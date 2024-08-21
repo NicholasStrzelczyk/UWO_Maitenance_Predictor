@@ -69,9 +69,10 @@ def test(model, test_loader, device):
                     os.path.join(pred_ex_save_path, 'targs', 'targ_{}.png'.format(pred_count)),
                     255 * np.squeeze(target.detach().cpu().numpy())
                 )
+                input_im = np.transpose(np.squeeze(image.detach().cpu().numpy()), axes=(1, 2, 0))
                 cv2.imwrite(
                     os.path.join(pred_ex_save_path, 'inputs', 'input_{}.png'.format(pred_count)),
-                    255 * np.squeeze(image.detach().cpu().numpy())
+                    255 * input_im
                 )
                 metrics_csv_list.append([pred_count, f1, jac])
                 pred_count += 1
