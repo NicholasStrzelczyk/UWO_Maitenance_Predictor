@@ -103,7 +103,7 @@ def test(model, test_loader, device):
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 2
+    model_version = 3
     input_shape = (512, 512)
     dataset_name = 'sm_rand_spots'
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
