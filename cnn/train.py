@@ -141,7 +141,8 @@ if __name__ == '__main__':
     loss_fn = torch.nn.BCELoss()
     # optimizer = torch.optim.AdamW(params=model.parameters())
     # optimizer = torch.optim.Adam(params=model.parameters())
-    optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-3)
+    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-3)  # got zeros for metrics
+    optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-5)
 
     # run torch summary report
     summary(model, input_size=(3, input_shape[0], input_shape[1]))
