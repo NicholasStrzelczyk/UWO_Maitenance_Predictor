@@ -142,8 +142,9 @@ if __name__ == '__main__':
     # optimizer = torch.optim.AdamW(params=model.parameters())
     # optimizer = torch.optim.Adam(params=model.parameters())
     # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-3)  # got zeros for metrics
-    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-5)  # not enough learning
-    optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-4)  # current
+    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-5)  # changes are very slow but not zero...
+    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-4)  # still got zeros...
+    optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-6)  # current
 
     # run torch summary report
     summary(model, input_size=(3, input_shape[0], input_shape[1]))
