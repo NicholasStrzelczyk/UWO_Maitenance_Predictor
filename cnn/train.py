@@ -147,7 +147,7 @@ if __name__ == '__main__':
     # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-6)  # sooooo slow...
     # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-6, momentum=0.9)  # still too slow
     # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-6, momentum=0.99)  # converges to zero f1
-    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-7, momentum=0.99)  # best trial yet
+    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-7, momentum=0.99)  # best trial yet (model_4)
 
     # run torch summary report
     summary(model, input_size=(3, input_shape[0], input_shape[1]))
