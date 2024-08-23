@@ -9,10 +9,8 @@
 *_predictions.png
 
 # model save directories (manually copy these)
-model_1/
-model_2/
-model_3/
-model_4/
+model_*/
+past_experiments/
 
 # legacy code directories
 AAA_old_code/

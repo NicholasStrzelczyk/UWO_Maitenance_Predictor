@@ -95,21 +95,23 @@ def train(model, loss_fn, optimizer, train_loader, val_loader, n_epochs, device)
 
 if __name__ == '__main__':
     # hyperparameters
-    # model_name = 'basic_unet w/ adamW optimizer'
+    model_name = 'basic_unet w/ adamW optimizer'
     # model_name = 'basic_unet w/ adam optimizer'
-    model_name = 'basic_unet w/ sgd optimizer'
-    model_version = 3
+    # model_name = 'basic_unet w/ sgd optimizer'
+    model_version = 1
+    # model_version = 2
+    # model_version = 3
     n_epochs = 100  # num of epochs
     batch_sz = 8  # batch size
     # seed = get_random_seed()  # generate random seed
     seed = 987654321  # manual seed
     val_split = 0.2  # split for validation dataset
     input_shape = (512, 512)  # same size used in U-Net paper for training
-    dataset_name = 'sm_rand_spots'
+    dataset_name = 'sm_randspots30'
     loss_fn_name = 'binary_cross_entropy'
-    # optimizer_name = 'default_adam_w'
+    optimizer_name = 'default_adam_w'
     # optimizer_name = 'default_adam'
-    optimizer_name = 'default_sgd'
+    # optimizer_name = 'default_sgd'
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # set up paths and directories
@@ -139,15 +141,9 @@ if __name__ == '__main__':
 
     # init model optimization parameters
     loss_fn = torch.nn.BCELoss()
-    # optimizer = torch.optim.AdamW(params=model.parameters())
+    optimizer = torch.optim.AdamW(params=model.parameters())
     # optimizer = torch.optim.Adam(params=model.parameters())
-    optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-3)  # got zeros for metrics
-    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-5)  # changes are very slow but not zero...
-    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-4)  # still got zeros...
-    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-6)  # sooooo slow...
-    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-6, momentum=0.9)  # still too slow
-    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-6, momentum=0.99)  # converges to zero f1
-    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-7, momentum=0.99)  # best trial yet (model_4)
+    # optimizer = torch.optim.SGD(params=model.parameters(), lr=1e-3)
 
     # run torch summary report
     summary(model, input_size=(3, input_shape[0], input_shape[1]))

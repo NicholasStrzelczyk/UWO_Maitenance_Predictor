@@ -2,7 +2,6 @@ import csv
 import os
 from datetime import datetime
 
-import cv2
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
@@ -23,6 +22,9 @@ def plot_metric(metric, metric_name):
     metric.plot(score=True)
     plt.savefig(os.path.join(save_path, 'model_{}_test_{}.png'.format(model_version, metric_name)))
 
+    torch.save(metric.state_dict(), os.path.join(save_path, '{}.pth'.format(metric_name)))
+    metric.reset()
+
 
 def print_hist(metric_vals, metric_name):
     global model_version, save_path
@@ -35,14 +37,19 @@ def print_hist(metric_vals, metric_name):
     plt.suptitle('Prediction Histogram for {}'.format(metric_name), fontsize=16, fontweight='bold')
     plt.savefig(os.path.join(save_path, 'model_{}_test_{}.png'.format(model_version, metric_name)))
 
+    csv_path = os.path.join(save_path, '{}.csv'.format(metric_name))
+    open(csv_path, 'w+').close()  # overwrite/ make new blank file
+    with open(csv_path, 'a', encoding='UTF8', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([metric_name])
+        writer.writerows(metric_vals)
+
 
 def test(model, test_loader, device):
     global model_version, save_path, pred_ex_save_path
 
-    pred_count = 1
-    metrics_csv_list = []
     f1_scores, jac_idxs = [], []
-    bprc = BinaryPrecisionRecallCurve(thresholds=int(len(test_loader) / 2)).to(device)
+    bprc = BinaryPrecisionRecallCurve(thresholds=1000).to(device)
     model.eval()
     log_and_print("{} starting testing...".format(datetime.now()))
 
@@ -52,30 +59,9 @@ def test(model, test_loader, device):
             image = image.to(device=device)
             target = target.to(device=device)
             output = model(image)
-
-            f1 = binary_f1_score(output, target).item()
-            jac = binary_jaccard_index(output, target).item()
+            f1_scores.append(binary_f1_score(output, target).item())
+            jac_idxs.append(binary_jaccard_index(output, target).item())
             bprc.update(output, target.long())
-
-            f1_scores.append(f1)
-            jac_idxs.append(jac)
-
-            if f1 <= 0.5 or jac <= 0.5:
-                cv2.imwrite(
-                    os.path.join(pred_ex_save_path, 'preds', 'pred_{}.png'.format(pred_count)),
-                    255 * np.squeeze(output.detach().cpu().numpy())
-                )
-                cv2.imwrite(
-                    os.path.join(pred_ex_save_path, 'targs', 'targ_{}.png'.format(pred_count)),
-                    255 * np.squeeze(target.detach().cpu().numpy())
-                )
-                cv2.imwrite(
-                    os.path.join(pred_ex_save_path, 'inputs', 'input_{}.png'.format(pred_count)),
-                    255 * np.transpose(np.squeeze(image.detach().cpu().numpy()), axes=(1, 2, 0))
-                )
-                metrics_csv_list.append([pred_count, f1, jac])
-                pred_count += 1
-
             del image, target, output
 
     # --- print epoch results --- #
@@ -87,33 +73,21 @@ def test(model, test_loader, device):
 
     # --- save metric outputs --- #
     log_and_print("{} generating prediction plots and figures...".format(datetime.now()))
+    plot_metric(bprc, 'bprc')
     print_hist(f1_scores, 'f1_score')
     print_hist(jac_idxs, 'jaccard_index')
-    plot_metric(bprc, 'prc')
-
-    csv_path = os.path.join(pred_ex_save_path, 'prediction_scores.csv')
-    open(csv_path, 'w+').close()  # overwrite/ make new blank file
-    with open(csv_path, 'a', encoding='UTF8', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['pred_num', 'f1_score', 'jaccard_index'])
-        writer.writerows(metrics_csv_list)
-
     log_and_print("{} testing complete.".format(datetime.now()))
 
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 3
+    model_version = 1
     input_shape = (512, 512)
-    dataset_name = 'sm_rand_spots'
+    dataset_name = 'sm_randspots30'
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # set up paths and directories
     save_path = os.path.join('.', 'model_{}'.format(model_version))
-    pred_ex_save_path = os.path.join(save_path, 'pred_examples')
-    os.makedirs(os.path.join(pred_ex_save_path, 'preds'), exist_ok=True)
-    os.makedirs(os.path.join(pred_ex_save_path, 'targs'), exist_ok=True)
-    os.makedirs(os.path.join(pred_ex_save_path, 'inputs'), exist_ok=True)
 
     # set up logger and deterministic seed
     setup_basic_logger(os.path.join(save_path, 'testing.log'))

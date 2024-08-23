@@ -11,3 +11,13 @@
 ### Rain Data Problem 
 - Rain data is difficult to make synthetic data from.
 - Consider a new data synthesis method for making rainy data.
+
+### TODO FOR RESULTS:
+- Save CSV for Binary Precision Recall Curve for each model, then plot them into one figure.
+- Save CSV for Histograms 
+
+### FOR PAPER RESULTS:
+- 2 (maybe 3) experiments:
+- tested 3 optimizers (with 1 figure of all precision recall curves), selected best one. (also histograms!)
+- (maybe) determine how growing rate affects results. Train and test models on new datasets.
+- tested best model with the original 4-scenario-dataset for more realistic PdM.
