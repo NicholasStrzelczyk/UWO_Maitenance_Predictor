@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
     # set up dataset(s)
     x_test, y_test, _, _ = get_xy_data(dataset_name, partition='test')
-    test_ds = SmRandSpotsDS(x_test, y_test)
+    test_ds = SmRandSpotsDS(x_test, y_test, dataset_name)
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
 
     # compile model

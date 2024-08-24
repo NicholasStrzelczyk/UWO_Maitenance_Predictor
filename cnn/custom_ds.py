@@ -51,13 +51,13 @@ class CustomDS(Dataset):  # OLD DATASET FULL SIZE
 
 
 class RandSpotsDS(Dataset):  # FULL SIZE RANDOM SPOTS w/ RESIZING
-    def __init__(self, x_set, y_set, resize_shape=None):
+    def __init__(self, x_set, y_set, ds_folder_name, resize_shape=None):
         if sys.platform == 'darwin':
-            root_dir = os.path.join(data_path_mac, 'rand_spots_ds')
+            root_dir = os.path.join(data_path_mac, str(ds_folder_name))
         elif sys.platform == 'win32':
-            root_dir = os.path.join(data_path_win32, 'rand_spots_ds')
+            root_dir = os.path.join(data_path_win32, str(ds_folder_name))
         else:
-            root_dir = os.path.join(data_path_linux, 'rand_spots_ds')
+            root_dir = os.path.join(data_path_linux, str(ds_folder_name))
 
         self.resize_shape = resize_shape
         self.x, self.y = [], []
@@ -93,13 +93,13 @@ class RandSpotsDS(Dataset):  # FULL SIZE RANDOM SPOTS w/ RESIZING
 
 
 class SmRandSpotsDS(Dataset):  # PREPROCESSED RANDOM SPOTS (no resizing)
-    def __init__(self, x_set, y_set):
+    def __init__(self, x_set, y_set, ds_folder_name):
         if sys.platform == 'darwin':
-            root_dir = os.path.join(data_path_mac, 'sm_rand_spots')
+            root_dir = os.path.join(data_path_mac, str(ds_folder_name))
         elif sys.platform == 'win32':
-            root_dir = os.path.join(data_path_win32, 'sm_rand_spots')
+            root_dir = os.path.join(data_path_win32, str(ds_folder_name))
         else:
-            root_dir = os.path.join(data_path_linux, 'sm_rand_spots')
+            root_dir = os.path.join(data_path_linux, str(ds_folder_name))
         self.x, self.y = [], []
         for idx in range(len(x_set)):
             self.x.append(os.path.join(root_dir, fix_path(x_set[idx])))
