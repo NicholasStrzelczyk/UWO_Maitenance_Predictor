@@ -42,7 +42,7 @@ def print_hist(metric_vals, metric_name):
     with open(csv_path, 'a', encoding='UTF8', newline='') as file:
         writer = csv.writer(file)
         writer.writerow([metric_name])
-        writer.writerows([metric_vals])
+        writer.writerows(metric_vals.aslist())
 
 
 def test(model, test_loader, device):
