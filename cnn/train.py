@@ -98,7 +98,7 @@ if __name__ == '__main__':
     model_name = 'basic_unet w/ adamW optimizer'
     # model_name = 'basic_unet w/ adam optimizer'
     # model_name = 'basic_unet w/ sgd optimizer'
-    model_version = 1
+    model_version = 2
     # model_version = 2
     # model_version = 3
     n_epochs = 100  # num of epochs
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     seed = 987654321  # manual seed
     val_split = 0.2  # split for validation dataset
     input_shape = (512, 512)  # same size used in U-Net paper for training
-    dataset_name = 'sm_randspots30'
+    dataset_name = 'sm_randspots50'
     loss_fn_name = 'binary_cross_entropy'
     optimizer_name = 'default_adam_w'
     # optimizer_name = 'default_adam'
