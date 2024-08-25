@@ -82,7 +82,7 @@ def test(model, test_loader, device):
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 1
+    model_version = 2
     input_shape = (512, 512)
     dataset_name = 'synth_datasets'
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
