@@ -11,7 +11,7 @@ from utils.misc_util import fix_path
 
 class CustomDS(Dataset):
     def __init__(self, x_set, y_set, ds_folder_name, resize_shape=None):
-        self.resize_shape = resize_shape
+        self.resize_shape = resize_shape  # must be smaller than 1920x1080
         if sys.platform == 'darwin':
             root_dir = os.path.join(data_path_mac, str(ds_folder_name))
         elif sys.platform == 'win32':
@@ -30,9 +30,9 @@ class CustomDS(Dataset):
         image = cv2.imread(self.x[idx], cv2.IMREAD_COLOR)
         target = cv2.imread(self.y[idx], cv2.IMREAD_GRAYSCALE)
 
-        if self.resize_shape is not None:
-            image = cv2.resize(image, self.resize_shape)
-            target = cv2.resize(target, self.resize_shape)
+        if self.resize_shape is not None and self.resize_shape != target.shape[:2]:
+            image = cv2.resize(image, self.resize_shape, interpolation=cv2.INTER_AREA)
+            target = cv2.resize(target, self.resize_shape, interpolation=cv2.INTER_AREA)
 
         image = np.transpose(image, axes=(2, 0, 1))  # transpose RGB image to be (C, H, W) instead of (H, W, C)
         target = np.expand_dims(target, axis=0)  # add dimension for where channels normally are
