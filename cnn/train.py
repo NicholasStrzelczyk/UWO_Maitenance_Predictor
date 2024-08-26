@@ -7,7 +7,7 @@ from torchmetrics.functional.classification import binary_f1_score, binary_jacca
 from torchsummary import summary
 from tqdm import tqdm
 
-from custom_ds import SmRandSpotsDS
+from custom_ds import SmRandSpotsDS, CustomDS
 from utils.data_import_util import get_xy_data
 from unet_model import UNet
 from utils.log_util import log_and_print, setup_basic_logger, print_hyperparams
@@ -130,8 +130,8 @@ if __name__ == '__main__':
 
     # set up dataset(s)
     x_train, y_train, x_val, y_val = get_xy_data(dataset_name, partition='train', split=val_split, seed=seed)
-    train_ds = SmRandSpotsDS(x_train, y_train, dataset_name)
-    val_ds = SmRandSpotsDS(x_val, y_val, dataset_name)
+    train_ds = CustomDS(x_train, y_train, dataset_name)
+    val_ds = CustomDS(x_val, y_val, dataset_name)
     train_loader = DataLoader(train_ds, batch_size=batch_sz, shuffle=False)
     val_loader = DataLoader(val_ds, batch_size=batch_sz, shuffle=False)
 
