@@ -10,7 +10,7 @@ from torchmetrics.functional.classification import binary_f1_score, binary_jacca
 from tqdm import tqdm
 
 from utils.data_import_util import get_xy_data
-from custom_ds import CustomDS, SmRandSpotsDS
+from custom_ds import CustomDS
 from unet_model import UNet
 
 

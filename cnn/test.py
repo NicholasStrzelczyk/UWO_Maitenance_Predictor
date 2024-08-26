@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 from utils.data_import_util import get_xy_data
 from utils.log_util import setup_basic_logger, log_and_print, print_hyperparams
-from custom_ds import SmRandSpotsDS, CustomDS
+from custom_ds import CustomDS
 from unet_model import UNet
 
 
