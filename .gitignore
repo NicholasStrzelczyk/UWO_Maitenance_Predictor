@@ -8,9 +8,10 @@
 *.log
 *_predictions.png
 
-# model save directories (manually copy these)
+# large file locations (manually copy these)
 model_*/
 past_experiments/
+metrics/*.png
 
 # legacy code directories
 AAA_old_code/

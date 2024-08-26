@@ -11,6 +11,7 @@ def make_combined_bprc_plot(path1, path2, path3):
 	for m_path in [path1, path2, path3]:
 		bprc = BinaryPrecisionRecallCurve(thresholds=num_thresholds)
 		bprc.load_state_dict(torch.load(m_path, map_location='cpu'))
+		print(bprc.metric_state)  # yep, saving the metrics didn't work :/
 		bprc.plot(score=True, ax=plt.gca())
 		bprc.reset()
 	plt.savefig(os.path.join('.', fig_save_name))
@@ -19,9 +20,9 @@ def make_combined_bprc_plot(path1, path2, path3):
 if __name__ == '__main__':
 	# hyperparameters
 	num_thresholds = 1000
-	bprc_path_1 = '../model_1/bprc.pth'
-	bprc_path_2 = '../model_2/bprc.pth'
-	bprc_path_3 = '../model_3/bprc.pth'
+	bprc_path_1 = '../model_1/synth_datasets test results/bprc.pth'
+	bprc_path_2 = '../model_2/synth_datasets test results/bprc.pth'
+	bprc_path_3 = '../model_3/synth_datasets test results/bprc.pth'
 	fig_save_name = 'combined_bprc.png'
 
 	# ----- ----- ----- #
