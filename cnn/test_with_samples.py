@@ -114,7 +114,7 @@ def test(model, test_loader, device):
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 1
+    model_version = 2
     input_shape = (512, 512)
     # dataset_name = 'synth_datasets'
     dataset_name = 'sm_rand_spots'
