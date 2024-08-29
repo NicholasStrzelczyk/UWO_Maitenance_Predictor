@@ -21,3 +21,10 @@
 - tested 3 optimizers (with 1 figure of all precision recall curves), selected best one. (also histograms!)
 - (maybe) determine how growing rate affects results. Train and test models on new datasets.
 - tested best model with the original 4-scenario-dataset for more realistic PdM.
+
+### Notes from zoom session on Aug 28th:
+- Look into ROC curves
+- Try setting an initial bias in the model.
+- Try weighted BCE loss: https://discuss.pytorch.org/t/use-class-weight-with-binary-cross-entropy-loss/125265
+- Maybe restructure how train/val/test splits work: maybe have 1 dataset with 4 train scenarios, 1 val scenario, 1 test scenario.
+- ^ this guarentees that a full scenario is used for validation and testing, not just any random samples.

@@ -1,4 +1,5 @@
 import os
+from enum import Enum
 
 import numpy as np
 import pandas as pd
@@ -7,39 +8,84 @@ from matplotlib import pyplot as plt
 METRIC_NAMES = ['f1_score', 'jaccard_index']
 
 
-def make_combined_hists(path1, path2, path3):
+class Experiment(Enum):
+	OPTIMIZERS = 1
+	GROWTH_10SC = 2
+	GROWTH_4SC = 3
+
+
+def get_experiment_paths(experiment):
+	if experiment == Experiment.OPTIMIZERS:
+		data_paths = [
+			'../past_experiments/optimizer experiment/model_1/test results',
+			'../past_experiments/optimizer experiment/model_2/test results',
+			'../past_experiments/optimizer experiment/model_3/test results',
+		]
+		legend_names = ['AdamW', 'Adam', 'SGD']
+		save_path = '../past_experiments/optimizer experiment/combined graphs'
+	elif experiment == Experiment.GROWTH_10SC:
+		data_paths = [
+			'../past_experiments/10_sc growth experiment/model_1 30_percent/test results',
+			'../past_experiments/10_sc growth experiment/model_2 50_percent/test results',
+			'../past_experiments/10_sc growth experiment/model_3 normal/test results',
+		]
+		legend_names = ['30% growth rate', '50% growth rate', 'normal growth rate']
+		save_path = '../past_experiments/10_sc growth experiment/combined graphs'
+	elif experiment == Experiment.GROWTH_4SC:
+		data_paths = [
+			'../past_experiments/4_sc growth experiment/model_1 30_percent/test results',
+			'../past_experiments/4_sc growth experiment/model_2 50_percent/test results',
+			'../past_experiments/4_sc growth experiment/model_3 normal/test results',
+		]
+		legend_names = ['30% growth rate', '50% growth rate', 'normal growth rate']
+		save_path = '../past_experiments/4_sc growth experiment/combined graphs'
+	else:
+		print('Invalid experiment: {}'.format(experiment.name))
+		quit()
+
+	return {
+		'data_paths': data_paths,
+		'legend_names': legend_names,
+		'save_path': save_path,
+	}
+
+
+def make_combined_hists(experiment, fig_size=(6.4, 4.8), legend_loc='upper right', y_ticks=None):
+	exp_dict = get_experiment_paths(experiment)
+
 	for metric_name in METRIC_NAMES:
 		plt.clf()
-		plt.figure()
+		plt.figure(figsize=fig_size)
 		metric_lists = []
 
-		for dir_path in [path1, path2, path3]:
+		for dir_path in exp_dict['data_paths']:
 			df = pd.read_csv(os.path.join(dir_path, '{}.csv'.format(metric_name)))
 			metric_lists.append(df[metric_name].tolist())
 
 		bins = np.linspace(0.0, 1.0, 5)
-		legend_names = [legend_name_1, legend_name_2, legend_name_3]
+		legend_names = exp_dict['legend_names']
 		vals, bins, bars = plt.hist(metric_lists, bins, label=legend_names)
 		plt.gca().set_xticks(bins)
-		plt.xlabel(metric_name)
+		if y_ticks is not None:
+			plt.gca().set_yticks(y_ticks)
+		plt.xlabel(metric_name.replace('_', ' '))
 		plt.ylabel('number of predictions')
 		# plt.bar_label(bars)  # doesn't work for some reason???
-		plt.legend(loc='upper right')
-		plt.savefig(os.path.join(save_location, 'combined_{}_hist.png'.format(metric_name)))
+		plt.legend(loc=legend_loc)
+		plt.tight_layout()
+		plt.savefig(os.path.join(exp_dict['save_path'], 'combined_{}_hist.png'.format(metric_name)))
+		break  # since we're not using jaccard index right now
 
 
 if __name__ == '__main__':
 	# hyperparameters
-	dir_1 = '../past_experiments/Aug26_randspots_50_30_etc/model_1 (randspots30)/sm_rand_spots test results'
-	dir_2 = '../past_experiments/Aug26_randspots_50_30_etc/model_2 (randspots50)/sm_rand_spots test results'
-	dir_3 = '../past_experiments/Aug26_randspots_50_30_etc/model_3 (normal)/sm_rand_spots test results'
-
-	legend_name_1 = 'randspots30'
-	legend_name_2 = 'randspots50'
-	legend_name_3 = 'randspots_normal'
-
-	save_location = '../past_experiments/Aug26_randspots_50_30_etc/10_scenario test_results'
+	# exp = Experiment.OPTIMIZERS
+	# exp = Experiment.GROWTH_10SC
+	exp = Experiment.GROWTH_4SC
+	im_size = (4.0, 2.5)
+	legend_location = 'upper center'
+	y_bins = np.linspace(0, 1600, 5)
 
 	# ----- ----- ----- #
-	make_combined_hists(dir_1, dir_2, dir_3)
+	make_combined_hists(exp, im_size, legend_location, y_bins)
 

@@ -47,7 +47,7 @@ def print_hist(metric_vals, metric_name):
 
 
 def test(model, test_loader, device):
-    global model_version, save_path, pred_ex_save_path
+    global model_version, save_path
 
     f1_scores, jac_idxs = [], []
     bprc = BinaryPrecisionRecallCurve(thresholds=1000).to(device)
@@ -83,7 +83,7 @@ def test(model, test_loader, device):
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 1
+    model_version = 2
     input_shape = (512, 512)
     # dataset_name = 'synth_datasets'
     dataset_name = 'sm_rand_spots'

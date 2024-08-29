@@ -1,31 +1,72 @@
 import os
+from enum import Enum
 
 import torch
 from matplotlib import pyplot as plt
 from torchmetrics.classification import BinaryPrecisionRecallCurve
 
 
-def make_combined_bprc_plot(path1, path2, path3):
+class Experiment(Enum):
+	OPTIMIZERS = 1
+	GROWTH_10SC = 2
+	GROWTH_4SC = 3
+
+
+def get_experiment_paths(experiment):
+	if experiment == Experiment.OPTIMIZERS:
+		data_paths = [
+			'../past_experiments/optimizer experiment/model_1/test results',
+			'../past_experiments/optimizer experiment/model_2/test results',
+			'../past_experiments/optimizer experiment/model_3/test results',
+		]
+		save_path = '../past_experiments/optimizer experiment/combined graphs'
+	elif experiment == Experiment.GROWTH_10SC:
+		data_paths = [
+			'../past_experiments/10_sc growth experiment/model_1 30_percent/test results',
+			'../past_experiments/10_sc growth experiment/model_2 50_percent/test results',
+			'../past_experiments/10_sc growth experiment/model_3 normal/test results',
+		]
+		save_path = '../past_experiments/10_sc growth experiment/combined graphs'
+	elif experiment == Experiment.GROWTH_4SC:
+		data_paths = [
+			'../past_experiments/4_sc growth experiment/model_1 30_percent/test results',
+			'../past_experiments/4_sc growth experiment/model_2 50_percent/test results',
+			'../past_experiments/4_sc growth experiment/model_3 normal/test results',
+		]
+		save_path = '../past_experiments/4_sc growth experiment/combined graphs'
+	else:
+		print('Invalid experiment: {}'.format(experiment.name))
+		quit()
+
+	return {
+		'data_paths': data_paths,
+		'save_path': save_path,
+	}
+
+
+def make_combined_bprc_plot(experiment, fig_size=(6.4, 4.8), num_thresholds=1000):
+	exp_dict = get_experiment_paths(experiment)
 	plt.clf()
-	plt.figure()
-	for m_path in [path1, path2, path3]:
+	plt.figure(figsize=fig_size)
+	for m_path in exp_dict['data_paths']:
 		bprc = BinaryPrecisionRecallCurve(thresholds=num_thresholds)
-		bprc.load_state_dict(torch.load(m_path, map_location='cpu'))
+		bprc.load_state_dict(torch.load(os.path.join(m_path, 'bprc.pth'), map_location='cpu'))
 		bprc.plot(score=True, ax=plt.gca())
 		bprc.reset()
-	plt.savefig(os.path.join(save_location, fig_save_name))
+	plt.title('')
+	plt.tight_layout()
+	plt.savefig(os.path.join(exp_dict['save_path'], 'combined_bprc.png'))
 
 
 if __name__ == '__main__':
 	# hyperparameters
-	num_thresholds = 1000
-	bprc_path_1 = '../past_experiments/Aug26_randspots_50_30_etc/model_1 (randspots30)/sm_rand_spots test results/bprc.pth'
-	bprc_path_2 = '../past_experiments/Aug26_randspots_50_30_etc/model_2 (randspots50)/sm_rand_spots test results/bprc.pth'
-	bprc_path_3 = '../past_experiments/Aug26_randspots_50_30_etc/model_3 (normal)/sm_rand_spots test results/bprc.pth'
-	save_location = '../past_experiments/Aug26_randspots_50_30_etc/10_scenario test_results'
-	fig_save_name = 'combined_bprc.png'
+	# exp = Experiment.OPTIMIZERS
+	exp = Experiment.GROWTH_10SC
+	# exp = Experiment.GROWTH_4SC
+	im_size = (4.0, 2.5)
+	num_thresh = 1000  # metric states were saved w/ 1000 thresholds
 
 	# ----- ----- ----- #
-	make_combined_bprc_plot(bprc_path_1, bprc_path_2, bprc_path_3)
+	make_combined_bprc_plot(exp, im_size, num_thresh)
 
 
