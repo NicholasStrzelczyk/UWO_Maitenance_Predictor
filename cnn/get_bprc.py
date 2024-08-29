@@ -12,16 +12,6 @@ from custom_ds import CustomDS
 from unet_model import UNet
 
 
-def plot_metric(metric, metric_name):
-    global model_version, save_path
-    plt.clf()
-    metric.plot(score=True)
-    plt.savefig(os.path.join(save_path, 'model_{}_test_{}.png'.format(model_version, metric_name)))
-
-    torch.save(metric.state_dict(), os.path.join(save_path, '{}.pth'.format(metric_name)))
-    metric.reset()
-
-
 def test(model, test_loader, device):
     global model_version, save_path, pred_ex_save_path
     bprc = BinaryPrecisionRecallCurve(thresholds=1000).to(device)
@@ -40,13 +30,16 @@ def test(model, test_loader, device):
 
     # --- save metric outputs --- #
     print("{} saving bprc...".format(datetime.now()))
+    plt.clf()
+    bprc.plot(score=True)
+    plt.savefig(os.path.join(save_path, 'model_{}_test_{}.png'.format(model_version, 'bprc')))
     torch.save(bprc.state_dict(), os.path.join(save_path, '{}.pth'.format('bprc')))
     print("{} testing complete.".format(datetime.now()))
 
 
 if __name__ == '__main__':
     # hyperparameters
-    model_version = 2
+    model_version = 1
     input_shape = (512, 512)
     # dataset_name = 'synth_datasets'
     dataset_name = 'sm_rand_spots'

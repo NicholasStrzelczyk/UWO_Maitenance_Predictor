@@ -61,8 +61,8 @@ def make_combined_bprc_plot(experiment, fig_size=(6.4, 4.8), num_thresholds=1000
 if __name__ == '__main__':
 	# hyperparameters
 	# exp = Experiment.OPTIMIZERS
-	exp = Experiment.GROWTH_10SC
-	# exp = Experiment.GROWTH_4SC
+	# exp = Experiment.GROWTH_10SC
+	exp = Experiment.GROWTH_4SC
 	im_size = (4.0, 2.5)
 	num_thresh = 1000  # metric states were saved w/ 1000 thresholds
 
