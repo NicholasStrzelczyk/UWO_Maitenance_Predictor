@@ -78,7 +78,7 @@ def test(model, test_loader, device):
 
             day_f1_scores.append(f1)
             prev_foul_percentage = get_fouling_percentage(target.cpu().numpy())
-            prev_day = day
+            prev_day = day.cpu().numpy()
 
             del image, target, output
 

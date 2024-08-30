@@ -71,11 +71,11 @@ def make_combined_hists(experiment, fig_size=(6.4, 4.8), legend_loc='upper right
 
 if __name__ == '__main__':
 	# hyperparameters
-	exp = Experiment.OPTIMIZERS
-	# exp = Experiment.GROWTH_10SC
+	# exp = Experiment.OPTIMIZERS
+	exp = Experiment.GROWTH
 	im_size = (4.0, 2.5)
 	legend_location = 'upper center'
-	y_bins = np.linspace(0, 1600, 5)
+	y_bins = np.linspace(0, 300, 5)
 
 	# ----- ----- ----- #
 	make_combined_hists(exp, im_size, legend_location, y_bins)
