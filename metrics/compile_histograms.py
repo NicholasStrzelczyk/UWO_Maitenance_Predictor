@@ -12,54 +12,17 @@ METRIC_NAMES = ['f1_score', 'jaccard_index']
 class Experiment(Enum):
 	OPTIMIZERS = 1
 	GROWTH = 2
-	PDM = 3
 
 
 def get_experiment_paths(experiment):
 	if experiment == Experiment.OPTIMIZERS:
 		data_paths = [
-			'../past_experiments/optimizer experiment/model_1/test results',
-			'../past_experiments/optimizer experiment/model_2/test results',
-			'../past_experiments/optimizer experiment/model_3/test results',
-		]
-		legend_names = ['AdamW', 'Adam', 'SGD']
-		save_path = '../past_experiments/optimizer experiment/combined graphs'
-	elif experiment == Experiment.GROWTH:
-		data_paths = [
-			'../past_experiments/growth experiment/model_1 30_percent/test results',
-			'../past_experiments/growth experiment/model_2 50_percent/test results',
-			'../past_experiments/growth experiment/model_3 normal/test results',
-		]
-		legend_names = ['30% growth rate', '50% growth rate', 'normal growth rate']
-		save_path = '../past_experiments/10_sc growth experiment/combined graphs'
-	elif experiment == Experiment.PDM:
-		data_paths = [
-			'../past_experiments/PdM experiment/model_1 30_percent/test results',
-			'../past_experiments/PdM experiment/model_2 50_percent/test results',
-			'../past_experiments/PdM experiment/model_3 normal/test results',
-		]
-		legend_names = ['30% growth rate', '50% growth rate', 'normal growth rate']
-		save_path = '../past_experiments/4_sc growth experiment/combined graphs'
-	else:
-		print('Invalid experiment: {}'.format(experiment.name))
-		quit()
-
-	return {
-		'data_paths': data_paths,
-		'legend_names': legend_names,
-		'save_path': save_path,
-	}
-
-
-def get_experiment_paths_v2(experiment):
-	if experiment == Experiment.OPTIMIZERS:
-		data_paths = [
-			'../past_experiments/optimizer experiment/model_1/test results',
-			'../past_experiments/optimizer experiment/model_2/test results',
-			'../past_experiments/optimizer experiment/model_3/test results',
+			'../past_experiments/optimizer experiment/model_1 (SGD)/test results',
+			'../past_experiments/optimizer experiment/model_2 (Adam)/test results',
+			'../past_experiments/optimizer experiment/model_3 (AdamW)/test results',
 		]
 		legend_names = ['SGD', 'Adam', 'AdamW']
-		save_path = '../past_experiments/optimizer experiment/combined graphs'
+		save_path = '../past_experiments/optimizer experiment'
 	elif experiment == Experiment.GROWTH:
 		data_paths = [
 			'../past_experiments/growth experiment/model_1 30_percent/test results',
@@ -67,9 +30,9 @@ def get_experiment_paths_v2(experiment):
 			'../past_experiments/growth experiment/model_3 normal/test results',
 		]
 		legend_names = ['30% growth rate', '50% growth rate', 'normal growth rate']
-		save_path = '../past_experiments/10_sc growth experiment/combined graphs'
+		save_path = '../past_experiments/growth experiment'
 	else:
-		print('Invalid experiment num: {}'.format(experiment))
+		print('Invalid experiment: {}'.format(experiment.name))
 		quit()
 
 	return {
@@ -107,11 +70,6 @@ def make_combined_hists(experiment, fig_size=(6.4, 4.8), legend_loc='upper right
 
 
 if __name__ == '__main__':
-	# parser = argparse.ArgumentParser()
-	# parser.add_argument('-exp', type=int, help='experiment number')
-	# args = parser.parse_args()
-	# exp = args.exp
-
 	# hyperparameters
 	exp = Experiment.OPTIMIZERS
 	# exp = Experiment.GROWTH_10SC
