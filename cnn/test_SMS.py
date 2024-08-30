@@ -73,12 +73,12 @@ def test(model, test_loader, device):
 
             if day > prev_day:
                 averaged_f1 = round(np.mean(day_f1_scores), 5)
-                sms_csv_data.append([prev_day, averaged_f1, prev_foul_percentage])
+                sms_csv_data.append([prev_day.item(), averaged_f1, prev_foul_percentage])
                 day_f1_scores = []
 
             day_f1_scores.append(f1)
             prev_foul_percentage = get_fouling_percentage(target.cpu().numpy())
-            prev_day = day.cpu().numpy()
+            prev_day = day
 
             del image, target, output
 
