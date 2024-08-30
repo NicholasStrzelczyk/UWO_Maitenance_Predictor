@@ -82,6 +82,9 @@ def test(model, test_loader, device):
 
             del image, target, output
 
+    averaged_f1 = round(np.mean(day_f1_scores), 5)
+    sms_csv_data.append([prev_day.item(), averaged_f1, prev_foul_percentage])
+
     # --- print epoch results --- #
     log_and_print("{} testing metrics:".format(datetime.now()))
     log_and_print("\tf1_score:\t{:.9f} (best) | {:.9f} (worst) | {:.9f} (avg)".format(
