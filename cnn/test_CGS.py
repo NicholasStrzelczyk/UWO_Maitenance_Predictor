@@ -50,7 +50,8 @@ def print_hist(metric_vals, metric_name):
 def test(model, test_loader, device):
     global model_version, save_path
 
-    f1_scores, jac_idxs = [], []
+    f1_scores = []
+    # jac_idxs = []
     bprc = BinaryPrecisionRecallCurve(thresholds=1000).to(device)
     bprc.persistent(True)
     model.eval()
@@ -63,7 +64,7 @@ def test(model, test_loader, device):
             target = target.to(device=device)
             output = model(image)
             f1_scores.append(binary_f1_score(output, target).item())
-            jac_idxs.append(binary_jaccard_index(output, target).item())
+            # jac_idxs.append(binary_jaccard_index(output, target).item())
             bprc.update(output, target.long())
             del image, target, output
 
@@ -71,8 +72,8 @@ def test(model, test_loader, device):
     log_and_print("{} testing metrics:".format(datetime.now()))
     log_and_print("\tf1_score:\t{:.9f} (best) | {:.9f} (worst) | {:.9f} (avg)".format(
         np.max(f1_scores), np.min(f1_scores), np.mean(f1_scores)))
-    log_and_print("\tjaccard_idx:\t{:.9f} (best) | {:.9f} (worst) | {:.9f} (avg)".format(
-        np.max(jac_idxs), np.min(jac_idxs), np.mean(jac_idxs)))
+    # log_and_print("\tjaccard_idx:\t{:.9f} (best) | {:.9f} (worst) | {:.9f} (avg)".format(
+    #     np.max(jac_idxs), np.min(jac_idxs), np.mean(jac_idxs)))
 
     # --- save metric outputs --- #
     log_and_print("{} generating prediction plots and figures...".format(datetime.now()))
@@ -83,8 +84,12 @@ def test(model, test_loader, device):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', type=int, help='model version')
+    args = parser.parse_args()
+    model_version = args.m
+
     # hyperparameters
-    model_version = 1
     input_shape = (512, 512)
     dataset_name = 'sm_CGS_ds'
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')

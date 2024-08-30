@@ -1,0 +1,3 @@
+python cnn/test_CGS.py -m 1
+python cnn/test_CGS.py -m 2
+python cnn/test_CGS.py -m 3

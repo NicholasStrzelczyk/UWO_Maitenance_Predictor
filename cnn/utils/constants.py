@@ -5,7 +5,8 @@ data_path_linux = '/mnt/storage_1/bell_5g_datasets'
 
 valid_ds_folders = [
 	'synth_datasets',
-	'rand_spots_ds', 'sm_rand_spots',
-	'randspots30', 'sm_randspots30',
-	'randspots50', 'sm_randspots50'
+	'CGS_ds', 'sm_CGS_ds',
+	'CGS30_ds', 'sm_CGS30_ds',
+	'CGS50_ds', 'sm_CGS50_ds'
+	'SMS_ds', 'sm_SMS_ds',
 ]

@@ -14,6 +14,7 @@ past_experiments/
 metrics/*.png
 
 # legacy code directories
-AAA_old_code/
-BBB_old_code/
-CCC_old_code/
+0A_old_code/
+0B_old_code/
+0C_old_code/
+0D_old_code/

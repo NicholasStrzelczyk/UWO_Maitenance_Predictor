@@ -2,19 +2,22 @@ import csv
 import os
 from datetime import datetime
 
-import cv2
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 from torchmetrics.classification import BinaryPrecisionRecallCurve
-from torchmetrics.functional.classification import binary_f1_score, binary_jaccard_index
+from torchmetrics.functional.classification import binary_f1_score
 from tqdm import tqdm
 
-from utils.data_import_util import get_xy_data
 from utils.log_util import setup_basic_logger, log_and_print, print_hyperparams
-from custom_ds import CustomDS
+from custom_ds import SMSTestDS
 from unet_model import UNet
+
+
+def get_fouling_percentage(tgt_image):
+    pixel_count = np.count_nonzero(tgt_image > 0)
+    return round((100 * (pixel_count / (512 * 512))), 5)
 
 
 def plot_metric(metric, metric_name):
@@ -22,7 +25,6 @@ def plot_metric(metric, metric_name):
     plt.clf()
     metric.plot(score=True)
     plt.savefig(os.path.join(save_path, 'model_{}_test_{}.png'.format(model_version, metric_name)))
-
     torch.save(metric.state_dict(), os.path.join(save_path, '{}.pth'.format(metric_name)))
     metric.reset()
 
@@ -48,19 +50,19 @@ def print_hist(metric_vals, metric_name):
 
 
 def test(model, test_loader, device):
-    global model_version, save_path, pred_ex_save_path
+    global model_version, save_path
 
-    pred_count = 1
-    metrics_csv_list = []
-    f1_scores, jac_idxs = [], []
+    prev_day = 1
+    day_f1_scores = []
+    sms_csv_data = []
+    f1_scores = []
     bprc = BinaryPrecisionRecallCurve(thresholds=1000).to(device)
     bprc.persistent(True)
     model.eval()
     log_and_print("{} starting testing...".format(datetime.now()))
 
-    # --- validation step --- #
     with torch.no_grad():
-        for image, target in tqdm(test_loader, desc="test progress"):
+        for image, target, day in tqdm(test_loader, desc="test progress"):
             image = image.to(device=device)
             target = target.to(device=device)
             output = model(image)
@@ -68,24 +70,15 @@ def test(model, test_loader, device):
             bprc.update(output, target.long())
             f1 = binary_f1_score(output, target).item()
             f1_scores.append(f1)
-            jac = binary_jaccard_index(output, target).item()
-            jac_idxs.append(jac)
 
-            if f1 <= 0.5 or jac <= 0.5:
-                cv2.imwrite(
-                    os.path.join(pred_ex_save_path, 'preds', 'pred_{}.png'.format(pred_count)),
-                    255 * np.squeeze(output.detach().cpu().numpy())
-                )
-                cv2.imwrite(
-                    os.path.join(pred_ex_save_path, 'targs', 'targ_{}.png'.format(pred_count)),
-                    255 * np.squeeze(target.detach().cpu().numpy())
-                )
-                cv2.imwrite(
-                    os.path.join(pred_ex_save_path, 'inputs', 'input_{}.png'.format(pred_count)),
-                    255 * np.transpose(np.squeeze(image.detach().cpu().numpy()), axes=(1, 2, 0))
-                )
-                metrics_csv_list.append([pred_count, f1, jac])
-                pred_count += 1
+            if day > prev_day:
+                averaged_f1 = round(np.mean(day_f1_scores), 5)
+                sms_csv_data.append([prev_day, averaged_f1, prev_foul_percentage])
+                day_f1_scores = []
+
+            day_f1_scores.append(f1)
+            prev_foul_percentage = get_fouling_percentage(target.cpu().numpy())
+            prev_day = day
 
             del image, target, output
 
@@ -93,21 +86,18 @@ def test(model, test_loader, device):
     log_and_print("{} testing metrics:".format(datetime.now()))
     log_and_print("\tf1_score:\t{:.9f} (best) | {:.9f} (worst) | {:.9f} (avg)".format(
         np.max(f1_scores), np.min(f1_scores), np.mean(f1_scores)))
-    log_and_print("\tjaccard_idx:\t{:.9f} (best) | {:.9f} (worst) | {:.9f} (avg)".format(
-        np.max(jac_idxs), np.min(jac_idxs), np.mean(jac_idxs)))
 
     # --- save metric outputs --- #
     log_and_print("{} generating prediction plots and figures...".format(datetime.now()))
     plot_metric(bprc, 'bprc')
     print_hist(f1_scores, 'f1_score')
-    print_hist(jac_idxs, 'jaccard_index')
 
-    csv_path = os.path.join(pred_ex_save_path, 'prediction_scores.csv')
+    csv_path = os.path.join(save_path, 'SMS_test_data.csv')
     open(csv_path, 'w+').close()  # overwrite/ make new blank file
     with open(csv_path, 'a', encoding='UTF8', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['pred_num', 'f1_score', 'jaccard_index'])
-        writer.writerows(metrics_csv_list)
+        writer.writerow(['day', 'avg_f1_score', 'percent_img_fouling'])
+        writer.writerows(sms_csv_data)
 
     log_and_print("{} testing complete.".format(datetime.now()))
 
@@ -116,16 +106,11 @@ if __name__ == '__main__':
     # hyperparameters
     model_version = 3
     input_shape = (512, 512)
-    # dataset_name = 'synth_datasets'
-    dataset_name = 'sm_rand_spots'
+    dataset_name = 'sm_SMS_ds'
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # set up paths and directories
     save_path = os.path.join('.', 'model_{}'.format(model_version))
-    pred_ex_save_path = os.path.join(save_path, 'pred_examples')
-    os.makedirs(os.path.join(pred_ex_save_path, 'preds'), exist_ok=True)
-    os.makedirs(os.path.join(pred_ex_save_path, 'targs'), exist_ok=True)
-    os.makedirs(os.path.join(pred_ex_save_path, 'inputs'), exist_ok=True)
 
     # set up logger and deterministic seed
     setup_basic_logger(os.path.join(save_path, 'testing.log'))
@@ -136,8 +121,7 @@ if __name__ == '__main__':
     )
 
     # set up dataset(s)
-    x_test, y_test, _, _ = get_xy_data(dataset_name, partition='test')
-    test_ds = CustomDS(x_test, y_test, dataset_name, input_shape)
+    test_ds = SMSTestDS()
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
 
     # compile model
