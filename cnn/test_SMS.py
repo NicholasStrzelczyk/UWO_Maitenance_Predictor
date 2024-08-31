@@ -16,9 +16,8 @@ from unet_model import UNet
 
 
 def make_scenario_csvs(data):
-    log_and_print('[DEBUG] length of data object = {}'.format(len(data)))
     for sc in range(len(data)):
-        csv_path = os.path.join(save_path, 'sc{}_data.csv'.format(sc))
+        csv_path = os.path.join(save_path, 'sc{}_data.csv'.format(sc + 1))
         open(csv_path, 'w+').close()  # overwrite/ make new blank file
         with open(csv_path, 'a', encoding='UTF8', newline='') as file:
             writer = csv.writer(file)
@@ -51,13 +50,13 @@ def print_hist(metric_vals, metric_name):
     plt.suptitle('Prediction Histogram for {}'.format(metric_name), fontsize=16, fontweight='bold')
     plt.savefig(os.path.join(save_path, 'model_{}_test_{}.png'.format(model_version, metric_name)))
 
-    csv_path = os.path.join(save_path, '{}.csv'.format(metric_name))
-    open(csv_path, 'w+').close()  # overwrite/ make new blank file
-    with open(csv_path, 'a', encoding='UTF8', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([metric_name])
-        for val in metric_vals:
-            writer.writerow([val])
+    # csv_path = os.path.join(save_path, '{}.csv'.format(metric_name))
+    # open(csv_path, 'w+').close()  # overwrite/ make new blank file
+    # with open(csv_path, 'a', encoding='UTF8', newline='') as file:
+    #     writer = csv.writer(file)
+    #     writer.writerow([metric_name])
+    #     for val in metric_vals:
+    #         writer.writerow([val])
 
 
 def test(model, test_loader, device):
