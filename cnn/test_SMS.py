@@ -85,14 +85,13 @@ def test(model, test_loader, device):
             f1 = binary_f1_score(output, target).item()
             f1_scores.append(f1)
 
-            if day < prev_day:  # if we have begun a new scenario (starting at day 1 again)
-                log_and_print('[DEBUG] started new scenario!')
-                curr_scenario += 1
-            elif day > prev_day:  # if we have advanced to next day
+            if day != prev_day:
                 scenarios_data[curr_scenario].append([
-                    prev_day.item(), round(np.mean(day_f1_scores), 5), prev_day_fouling
-                ])
+                    prev_day.item(), round(np.mean(day_f1_scores), 5), prev_day_fouling])
                 day_f1_scores = []
+
+                if day < prev_day:  # started new scenario
+                    curr_scenario += 1
 
             day_f1_scores.append(f1)
             prev_day_fouling = round(get_fouling_percentage(target.cpu().numpy()), 5)
@@ -100,7 +99,8 @@ def test(model, test_loader, device):
 
             del image, target, output
 
-    scenarios_data[curr_scenario].append([prev_day.item(), round(np.mean(day_f1_scores), 5), prev_day_fouling])
+    scenarios_data[curr_scenario].append([
+        prev_day.item(), round(np.mean(day_f1_scores), 5), prev_day_fouling])
     make_scenario_csvs(scenarios_data)
 
     # --- print epoch results --- #
