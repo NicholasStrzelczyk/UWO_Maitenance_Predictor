@@ -1,9 +1,9 @@
 # UWO_Maitenance_Predictor
 
 ### TODO:
-- Test AdamW, Adam, SGD using new CGS test set. ---> create new graphs
-- Test CGS30, CGS50, CGS using new test set. ---> create new graphs
-- Test SMS.
+- ReTest SMS, it currently isn't working correctly!
+- Plot Each Scenario seperately for SMS Test
+- (Optional) create third SMS scenario for testing
 
 ### Notes from zoom session on Aug 28th:
 - Look into ROC curves
