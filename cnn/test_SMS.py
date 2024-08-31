@@ -65,8 +65,8 @@ def test(model, test_loader, device):
                 break
 
     prev_day = 1
-    curr_scenario_f1_scores = []
-    all_scenario_f1_scores = []
+    curr_scenario = 1
+    scenario_f1_scores = [[], [], []]
     day_f1_scores = []
 
     f1_scores = []
@@ -87,10 +87,10 @@ def test(model, test_loader, device):
             f1_scores.append(f1)
 
             if day < prev_day:  # if we have begun a new scenario (starting at day 1 again)
-                all_scenario_f1_scores.append(curr_scenario_f1_scores)
-                curr_scenario_f1_scores = []
+                log_and_print('[DEBUG] started new scenario!')
+                curr_scenario += 1
             elif day > prev_day:  # if we have advanced to next day
-                curr_scenario_f1_scores.append(round(np.mean(day_f1_scores), 5))
+                scenario_f1_scores[curr_scenario - 1].append(round(np.mean(day_f1_scores), 5))
                 day_f1_scores = []
 
             day_f1_scores.append(f1)
@@ -98,8 +98,7 @@ def test(model, test_loader, device):
 
             del image, target, output
 
-    curr_scenario_f1_scores.append(round(np.mean(day_f1_scores), 5))
-    all_scenario_f1_scores.append(curr_scenario_f1_scores)
+    scenario_f1_scores[curr_scenario - 1].append(round(np.mean(day_f1_scores), 5))
 
     # --- merge SMS data into a CSV file --- #
     csv_path = os.path.join(save_path, 'SMS_test_data.csv')
@@ -108,11 +107,12 @@ def test(model, test_loader, device):
         writer = csv.writer(file)
         writer.writerow(['day', 'avg_f1_score_sc1', 'avg_f1_score_sc2', 'avg_f1_score_sc3', 'percent_img_fouling'])
         for day in range(60):
+            log_and_print('[DEBUG]' + str(day))
             writer.writerow([
                 day + 1,
-                all_scenario_f1_scores[0][day],
-                all_scenario_f1_scores[1][day],
-                all_scenario_f1_scores[2][day],
+                scenario_f1_scores[0][day],
+                scenario_f1_scores[1][day],
+                scenario_f1_scores[2][day],
                 foul_percentages[day]
             ])
 
