@@ -15,9 +15,20 @@ from custom_ds import SMSTestDS
 from unet_model import UNet
 
 
+def make_scenario_csvs(data):
+    log_and_print('[DEBUG] length of data object = {}'.format(len(data)))
+    for sc in range(len(data)):
+        csv_path = os.path.join(save_path, 'sc{}_data.csv'.format(sc))
+        open(csv_path, 'w+').close()  # overwrite/ make new blank file
+        with open(csv_path, 'a', encoding='UTF8', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['day', 'avg_f1_score', 'percent_img_fouling'])
+            writer.writerows(data[sc])
+
+
 def get_fouling_percentage(tgt_image):
     pixel_count = np.count_nonzero(tgt_image > 0)
-    return round((100 * (pixel_count / (512 * 512))), 5)
+    return 100 * (pixel_count / (512 * 512))
 
 
 def plot_metric(metric, metric_name):
@@ -52,21 +63,9 @@ def print_hist(metric_vals, metric_name):
 def test(model, test_loader, device):
     global model_version, save_path
 
-    # --- getting fouling percentages --- #
-    prev_day = 0
-    foul_percentages = []
-    with torch.no_grad():
-        for _, target, day in test_loader:
-            target = target.to(device=device)
-            if day > prev_day:
-                foul_percentages.append(get_fouling_percentage(target.cpu().numpy()))
-                prev_day = day
-            if len(foul_percentages) == 60:
-                break
-
     prev_day = 1
-    curr_scenario = 1
-    scenario_f1_scores = [[], [], []]
+    curr_scenario = 0
+    scenarios_data = [[], [], []]
     day_f1_scores = []
 
     f1_scores = []
@@ -75,7 +74,7 @@ def test(model, test_loader, device):
     model.eval()
     log_and_print("{} starting testing...".format(datetime.now()))
 
-    # --- determining metrics from actual testing --- #
+    # --- performing testing --- #
     with torch.no_grad():
         for image, target, day in tqdm(test_loader, desc="test progress"):
             image = image.to(device=device)
@@ -90,31 +89,19 @@ def test(model, test_loader, device):
                 log_and_print('[DEBUG] started new scenario!')
                 curr_scenario += 1
             elif day > prev_day:  # if we have advanced to next day
-                scenario_f1_scores[curr_scenario - 1].append(round(np.mean(day_f1_scores), 5))
+                scenarios_data[curr_scenario].append([
+                    prev_day.item(), round(np.mean(day_f1_scores), 5), prev_day_fouling
+                ])
                 day_f1_scores = []
 
             day_f1_scores.append(f1)
+            prev_day_fouling = round(get_fouling_percentage(target.cpu().numpy()), 5)
             prev_day = day
 
             del image, target, output
 
-    scenario_f1_scores[curr_scenario - 1].append(round(np.mean(day_f1_scores), 5))
-
-    # --- merge SMS data into a CSV file --- #
-    csv_path = os.path.join(save_path, 'SMS_test_data.csv')
-    open(csv_path, 'w+').close()  # overwrite/ make new blank file
-    with open(csv_path, 'a', encoding='UTF8', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['day', 'avg_f1_score_sc1', 'avg_f1_score_sc2', 'avg_f1_score_sc3', 'percent_img_fouling'])
-        for day in range(60):
-            log_and_print('[DEBUG]' + str(day))
-            writer.writerow([
-                day + 1,
-                scenario_f1_scores[0][day],
-                scenario_f1_scores[1][day],
-                scenario_f1_scores[2][day],
-                foul_percentages[day]
-            ])
+    scenarios_data[curr_scenario].append([prev_day.item(), round(np.mean(day_f1_scores), 5), prev_day_fouling])
+    make_scenario_csvs(scenarios_data)
 
     # --- print epoch results --- #
     log_and_print("{} testing metrics:".format(datetime.now()))

@@ -11,7 +11,7 @@ if __name__ == '__main__':
 	# y1_bins = np.linspace(0, 300, 5)
 	# y2_bins = np.linspace(0, 300, 5)
 	data_path = '../past_experiments/PdM experiment/model_3 normal/test results/SMS_test_data.csv'
-	save_path = '../past_experiments/PdM experiment/model_3 normal'
+	save_path = '../past_experiments/PdM experiment'
 
 	# ----- ----- ----- #
 	df = pd.read_csv(data_path)
